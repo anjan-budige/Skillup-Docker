@@ -39,9 +39,10 @@ const studentSchema = new Schema({
     max: [8, 'Semester cannot be more than 8'],
   },
   batch: {
-    type: String,
-    required: [false, 'Batch is required'],
-    trim: true,
+    type: Schema.Types.ObjectId,
+    ref: 'Batch', // This is the crucial link
+    required: false, // Or true if every student MUST have a batch
+    default: null
   },
   email: {
     type: String,

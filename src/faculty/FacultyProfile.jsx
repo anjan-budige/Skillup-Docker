@@ -80,7 +80,7 @@ function FacultyProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '' });
+  const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', department: '' });
   const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
@@ -115,6 +115,7 @@ function FacultyProfile() {
             firstName: result.data.firstName || '',
             lastName: result.data.lastName || '',
             email: result.data.email || '',
+            department: result.data.department || '',
           });
           setPhotoPreview(result.data.photo || null);
         } else {
@@ -172,6 +173,7 @@ function FacultyProfile() {
         setPhotoPreview(result.data.photo || null);
         setSelectedPhotoFile(null);
         setIsEditModalOpen(false);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second
         window.location.reload(); // To reflect changes in the main dashboard header
       } else {
         toast.error(result.message || 'Failed to update profile');
@@ -254,6 +256,7 @@ function FacultyProfile() {
               <div>
                 <h1 className="text-3xl font-bold text-slate-800">{`${userDetails.firstName} ${userDetails.lastName}`}</h1>
                 <p className="text-emerald-600 font-medium text-md mt-1">Faculty</p>
+                <p className="text-slate-600 font-medium text-md mt-1">Department: {userDetails.department || 'N/A'}</p>
               </div>
               <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                 <button onClick={() => { setIsEditModalOpen(true); setPhotoPreview(userDetails.photo || null); }} className="flex items-center justify-center px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50">
@@ -271,13 +274,14 @@ function FacultyProfile() {
                   <div className="space-y-1">
                     <InfoItem icon={User} label="Username" value={userDetails.username} />
                     <InfoItem icon={Mail} label="Email Address" value={userDetails.email} />
+                    <InfoItem icon={BookOpen} label="Department" value={userDetails.department || 'N/A'} />
                   </div>
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-slate-700 mb-3 border-b pb-2 pt-3">Account Details</h2>
                   <div className="space-y-1">
                     <InfoItem icon={Shield} label="Role" value="Faculty" iconColor="text-green-500" />
-                    <InfoItem icon={Calendar} label="Member Since" value={new Date(userDetails.createdAt).toLocaleDateString()} iconColor="text-purple-500" />
+                    <InfoItem icon={Calendar} label="Member Since" value={new Date(userDetails.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} iconColor="text-purple-500" />
                   </div>
                 </div>
               </div>
@@ -320,6 +324,7 @@ function FacultyProfile() {
                 <InputField label="First Name" name="firstName" value={formData.firstName} onChange={handleInputChange} required />
                 <InputField label="Last Name" name="lastName" value={formData.lastName} onChange={handleInputChange} required />
                 <InputField label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} required />
+                <InputField label="Department" name="department" value={formData.department} onChange={handleInputChange} required />
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
                   <p className="w-full px-3 py-2 border border-slate-200 rounded-md bg-slate-50 text-slate-600 sm:text-sm cursor-not-allowed">{userDetails?.username}</p>

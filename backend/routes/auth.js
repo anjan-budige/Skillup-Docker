@@ -500,7 +500,7 @@ router.post('/user-details', authenticateToken, async (req, res) => {
 // @access  Private
 router.put('/update-profile', authenticateToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, photo } = req.body;
+    const { firstName, lastName, email, photo, department } = req.body;
     const { role, id } = req.user;
 
     let user;
@@ -527,6 +527,7 @@ router.put('/update-profile', authenticateToken, async (req, res) => {
     user.lastName = lastName;
     user.email = email;
     if (photo) user.photo = photo;
+    if (role.toLowerCase() === 'faculty' && department) user.department = department;
 
     await user.save();
 
@@ -539,6 +540,7 @@ router.put('/update-profile', authenticateToken, async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         photo: user.photo,
+        department: user.department,
         role: role
       }
     });

@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { BookOpen } from 'lucide-react';
 // Make sure this utility exists and works in your project structure
 import { uploadImage } from '../utils/imageUpload'; 
 
@@ -241,7 +242,8 @@ function StudentProfile() {
                 <InfoItem icon={User} label="Username" value={userDetails.username} />
                 <InfoItem icon={Mail} label="Email Address" value={userDetails.email} />
                 <InfoItem icon={Shield} label="Role" value="Student" iconColor="text-green-500" />
-                <InfoItem icon={Calendar} label="Member Since" value={new Date(userDetails.createdAt).toLocaleDateString()} iconColor="text-pink-500" />
+                <InfoItem icon={BookOpen} label="Department" value={userDetails.department} iconColor="text-blue-500" />
+                <InfoItem icon={Calendar} label="Member Since" value={new Date(userDetails.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} iconColor="text-pink-500" />
               </div>
               <div className="lg:col-span-2 bg-white/60 p-6 rounded-xl border border-gray-200/70 shadow-sm">
                 <h2 className="text-xl font-semibold text-slate-700 mb-4 border-b pb-3">My Learning Journey</h2>

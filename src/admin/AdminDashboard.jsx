@@ -4,6 +4,17 @@ import Cookies from 'js-cookie';
 import { AcademicCapIcon } from '@heroicons/react/24/outline';
 import crypto from 'crypto-js';
 import { motion } from 'framer-motion';
+import { FaChalkboardTeacher } from 'react-icons/fa';
+import { FaUserGraduate } from 'react-icons/fa';
+import { Book } from 'lucide-react';
+import AdminFaculty from './components/AdminFaculty';
+import AdminTaskSubmissions from './components/AdminTaskSubmissions';
+
+const FacultyIcon = FaChalkboardTeacher;
+const StudentIcon = FaUserGraduate;
+
+
+
 import {
   Bell,
   User,
@@ -53,6 +64,9 @@ import AdminTasks from './components/AdminTasks';
 import AdminAnalytics from './components/AdminAnalytics';
 import AdminSettings from './components/AdminSettings';
 import AdminProfile from './AdminProfile';
+import AdminStudents from './components/AdminStudents';
+import AdminBatches from './components/AdminBatches';
+import AdminCourses from './components/AdminCourses';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -175,8 +189,10 @@ function AdminDashboard() {
 
   const menuItems = [
     { icon: <Home size={22} />, label: 'Dashboard', path: '/admin' },
-    { icon: <Users size={22} />, label: 'Users', path: '/admin/users' },
-    { icon: <Folder size={22} />, label: 'Departments', path: '/admin/departments' },
+    { icon: <FacultyIcon size={22} />, label: 'Faculty', path: '/admin/faculty' },
+    { icon: <StudentIcon size={22} />, label: 'Students', path: '/admin/students' },
+    { icon: <Users size={22} />, label: 'Batches', path: '/admin/batches' },
+    { icon: <Book size={22} />, label: 'Courses', path: '/admin/courses' },
     { icon: <CheckSquare size={22} />, label: 'Tasks', path: '/admin/tasks' },
     { icon: <ChartBar size={22} />, label: 'Analytics', path: '/admin/analytics' },
     { icon: <Settings size={22} />, label: 'Settings', path: '/admin/settings' },
@@ -383,9 +399,12 @@ function AdminDashboard() {
             {/* Nested Routes */}
             <Routes>
               <Route path="/" element={<AdminHome />} />
-              <Route path="/users" element={<AdminUsers />} />
-              <Route path="/departments" element={<AdminDepartments />} />
+              <Route path="/faculty" element={<AdminFaculty />} />
+              <Route path="/students" element={<AdminStudents />} />
+              <Route path="/batches" element={<AdminBatches />} />
+              <Route path="/courses" element={<AdminCourses />} />
               <Route path="/tasks" element={<AdminTasks />} />
+              <Route path="/tasks/:taskId" element={<AdminTaskSubmissions />} />
               <Route path="/analytics" element={<AdminAnalytics />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/profile" element={<AdminProfile />} />

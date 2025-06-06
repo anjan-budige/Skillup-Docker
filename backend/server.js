@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
+import AdminRoutes from './routes/admin.js';
 
 // Load environment variables
 config();
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/admin', AdminRoutes);
 
 // Default route
 app.get('/', (req, res) => {

@@ -1,6 +1,11 @@
 import { motion } from 'framer-motion';
+import { useEffect } from 'react';
 
 function AdminSettings() {
+
+  useEffect(() => {
+    document.title = "Admin | Settings";
+  }, []);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
