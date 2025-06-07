@@ -91,7 +91,7 @@ function AdminStudents() {
     const openModal = (type, data = null) => {
         setModalState({ type, data });
         if (type === 'add') {
-            setFormData({ firstName: '', lastName: '', email: '', username: '', password: '', department: '', rollNumber: '', semester: '', batch: '' });
+            setFormData({ firstName: '', lastName: '', email: '', username: '', password: '', department: '', rollNumber: '', semester: '' });
         } else if (type === 'edit') {
             setFormData(data);
         }
@@ -252,7 +252,6 @@ function AdminStudents() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <InputField name="semester" label="Semester" type="number" value={formData.semester || ''} onChange={handleInputChange} required={false} />
-                        <InputField name="batch" label="Batch (e.g., 2021-2025)" type="text" value={formData.batch || ''} onChange={handleInputChange} required={false} />
                     </div>
                     {modalState.type === 'add' && <InputField name="password" label="Password" type="password" value={formData.password || ''} onChange={handleInputChange} placeholder="Min. 6 characters"/>}
                     <div className="flex justify-end gap-3 pt-4">

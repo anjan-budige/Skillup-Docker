@@ -153,7 +153,9 @@ function AdminTasks() {
         finally { setIsLoading(false); }
     }, [pagination.page, debouncedSearch]);
 
-    useEffect(() => { fetchTasks(); }, [fetchTasks]);
+    useEffect(() => {
+        document.title = "Admin | Manage Tasks";
+         fetchTasks(); }, [fetchTasks]);
 
     const openModal = (type, data = null) => {
         setModalState({ type, data });

@@ -137,7 +137,9 @@ function AdminCourses() {
         finally { setIsLoading(false); }
     }, [pagination.page, debouncedSearch, filters.department, filters.batchId]);
 
-    useEffect(() => { fetchCourses(); }, [fetchCourses]);
+    useEffect(() => {
+        document.title = "Admin | Manage Courses";
+         fetchCourses(); }, [fetchCourses]);
 
     const handleFilterChange = (e) => {
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));

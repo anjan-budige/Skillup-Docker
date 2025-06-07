@@ -8,6 +8,7 @@ import Submission from '../models/Submission.js';
 import Course from '../models/Course.js';  
 import Batch from '../models/Batch.js';
 import Grade from '../models/grade.js';
+import Setting from '../models/Settings.js';
 
 
 const router = express.Router();
@@ -1056,6 +1057,53 @@ router.post('/tasks/add', authenticateAdmin, async (req, res) => {
   }
 });
 
+// @desc    Update an existing task
+// @route   PUT /api/admin/tasks/update/:id
+router.put('/tasks/update/:id', authenticateAdmin, async (req, res) => {
+  try {
+      const taskId = req.params.id;
+      const { title, course, ...restOfBody } = req.body;
+
+      const task = await Task.findById(taskId);
+      if (!task) {
+          return res.status(404).json({ success: false, message: 'Task not found.' });
+      }
+
+      // If course is being changed, we need to update grades
+      if (course && course !== task.course.toString()) {
+          const newCourse = await Course.findById(course).populate({ path: 'batches', select: 'students' });
+          if (!newCourse || newCourse.faculty.length === 0) {
+              return res.status(400).json({ success: false, message: 'New course is invalid or has no assigned faculty.' });
+          }
+
+          // Delete existing grades
+          await Grade.deleteMany({ task: taskId });
+
+          // Create new grade placeholders for students in the new course
+          const newStudentIds = newCourse.batches.flatMap(batch => batch.students);
+          if (newStudentIds.length > 0) {
+              const gradePlaceholders = newStudentIds.map(studentId => ({
+                  task: taskId,
+                  student: studentId,
+                  course: newCourse._id,
+              }));
+              await Grade.insertMany(gradePlaceholders, { ordered: false });
+          }
+      }
+
+      // Update task details
+      task.title = title || task.title;
+      task.course = course || task.course;
+      Object.assign(task, restOfBody);
+
+      const updatedTask = await task.save();
+      res.json({ success: true, data: updatedTask });
+  } catch (error) {
+      console.error('Error updating task:', error);
+      res.status(500).json({ success: false, message: 'Server error updating task.' });
+  }
+});
+
 // @desc    Grade or update grades for a task, handling status changes
 // @route   POST /api/admin/tasks/:id/grade
 router.post('/tasks/:id/grade', authenticateAdmin, async (req, res) => {
@@ -1216,6 +1264,149 @@ router.post('/tasks/:id/grade', authenticateAdmin, async (req, res) => {
   }
 });
 
+
+// @desc    Fetch aggregated data for the Analytics Dashboard
+// @route   GET /api/admin/analytics
+router.get('/analytics', authenticateAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate, department } = req.query;
+
+        // --- 1. Define Date and Department Filters ---
+        let dateFilter = {};
+        if (startDate && endDate) {
+            dateFilter.createdAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+
+        let departmentFilter = {};
+        if (department) {
+            const coursesInDept = await Course.find({ department }).select('_id');
+            const courseIdsInDept = coursesInDept.map(c => c._id);
+            departmentFilter = { course: { $in: courseIdsInDept } };
+        }
+
+        const finalFilter = { ...dateFilter, ...departmentFilter };
+
+        // --- 2. Run All Aggregations in Parallel ---
+        const [
+            kpiData,
+            submissionTrend,
+            coursePerformance,
+            facultyPerformance
+        ] = await Promise.all([
+            // Aggregation for KPIs
+            Grade.aggregate([
+                { $match: finalFilter },
+                {
+                    $group: {
+                        _id: null,
+                        totalSubmissions: { $sum: { $cond: [{ $ne: ['$submission', null] }, 1, 0] } },
+                        totalGraded: { $sum: { $cond: [{ $eq: ['$status', 'Graded'] }, 1, 0] } },
+                        averageScore: { $avg: '$grade' }
+                    }
+                }
+            ]),
+            // Aggregation for Submission Trend Chart
+            Submission.aggregate([
+                { $match: dateFilter },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            // Aggregation for Course Performance
+            Grade.aggregate([
+                { $match: finalFilter },
+                {
+                    $group: {
+                        _id: '$course',
+                        averageGrade: { $avg: '$grade' },
+                        submissionCount: { $sum: { $cond: [{ $ne: ['$submission', null] }, 1, 0] } }
+                    }
+                },
+                { $sort: { averageGrade: -1 } },
+                { $limit: 10 },
+                { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'courseInfo' } },
+                { $unwind: '$courseInfo' },
+                { $project: { _id: 0, courseName: '$courseInfo.title', averageGrade: 1, submissionCount: 1 } }
+            ]),
+            // Aggregation for Faculty Performance
+            Task.aggregate([
+                { $match: dateFilter },
+                {
+                    $lookup: {
+                        from: 'grades',
+                        localField: '_id',
+                        foreignField: 'task',
+                        as: 'grades'
+                    }
+                },
+                { $unwind: '$grades' },
+                {
+                    $group: {
+                        _id: '$createdBy',
+                        tasksCreated: { $addToSet: '$_id' },
+                        averageGrade: { $avg: '$grades.grade' }
+                    }
+                },
+                { $sort: { averageGrade: -1 } },
+                { $limit: 10 },
+                { $lookup: { from: 'faculties', localField: '_id', foreignField: '_id', as: 'facultyInfo' } },
+                { $unwind: '$facultyInfo' },
+                { $project: { _id: 0, facultyName: { $concat: ['$facultyInfo.firstName', ' ', '$facultyInfo.lastName']}, averageGrade: 1, taskCount: { $size: '$tasksCreated' } } }
+            ])
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                kpis: kpiData[0] || { totalSubmissions: 0, totalGraded: 0, averageScore: 0 },
+                submissionTrend,
+                coursePerformance,
+                facultyPerformance
+            }
+        });
+
+    } catch (error) {
+        console.error("Analytics Error:", error);
+        res.status(500).json({ success: false, message: 'Server error fetching analytics data.' });
+    }
+});
+
+
+router.get('/settings', authenticateAdmin, async (req, res) => {
+    try {
+        // Find the single settings document. If it doesn't exist, create it.
+        let settings = await Setting.findOne({ key: 'global' });
+        if (!settings) {
+            settings = await Setting.create({ key: 'global' });
+        }
+        res.json({ success: true, data: settings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error fetching settings.' });
+    }
+});
+
+// @desc    Update the global platform settings
+// @route   PUT /api/admin/settings
+router.put('/settings', authenticateAdmin, async (req, res) => {
+    try {
+        // Find the settings doc and update it. 'upsert: true' creates it if it doesn't exist.
+        const updatedSettings = await Setting.findOneAndUpdate(
+            { key: 'global' },
+            req.body,
+            { new: true, upsert: true, runValidators: true }
+        );
+        res.json({ success: true, data: updatedSettings, message: 'Settings updated successfully.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error updating settings.' });
+    }
+});
 
 
 
