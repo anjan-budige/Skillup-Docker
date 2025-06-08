@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { PlusCircle, Edit, Trash2, Search, Users, BookOpen, Clock, X, Eye, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, Users, Eye, UploadCloud, Image as ImageIcon, X } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
@@ -8,7 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useDebounce } from '../hooks/useDebounce';
 import { uploadCourseImage } from '../../utils/UploadCourseImage';
 
-// --- Reusable Components (can be moved to their own files) ---
+// --- Reusable Components (same as AdminCourses) ---
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-4xl' }) {
     if (!isOpen) return null;
@@ -33,7 +33,7 @@ const InputField = ({ name, label, type, value, onChange, placeholder, required 
     <div>
         <label htmlFor={name} className="text-sm font-medium text-slate-700 mb-1 block">{label}</label>
         <input id={name} name={name} type={type} value={value} onChange={onChange} placeholder={placeholder} required={required}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
     </div>
 );
 
@@ -41,7 +41,7 @@ const UserAvatar = ({ user, size = 'w-8 h-8' }) => (
     user.photo ?
         <img src={user.photo} alt={user.firstName} className={`${size} rounded-full object-cover ring-2 ring-white`} />
         :
-        <div className={`${size} rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold ring-2 ring-white`}>
+        <div className={`${size} rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold ring-2 ring-white`}>
             {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
         </div>
 );
@@ -56,9 +56,9 @@ const AssignableMultiSelect = ({ type, placeholder, selectedItems, onSelectionCh
         const searchItems = async () => {
             try {
                 const token = Cookies.get('token');
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/search/assignables`, {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/faculty/search-batches`, {
                     headers: { Authorization: `Bearer ${token}` },
-                    params: { type, q: debouncedSearch }
+                    params: { q: debouncedSearch }
                 });
                 setResults(response.data.data.filter(item => !selectedItems.some(sel => sel._id === item._id)));
             } catch (error) { toast.error(`Failed to search ${type}`); }
@@ -78,9 +78,9 @@ const AssignableMultiSelect = ({ type, placeholder, selectedItems, onSelectionCh
             <div className="p-2 border border-slate-300 rounded-md min-h-[80px] space-y-2">
                 <div className="flex flex-wrap gap-2">
                     {selectedItems.map(item => (
-                        <div key={item._id} className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-1 rounded-full flex items-center gap-2">
-                            <span>{type === 'faculty' ? `${item.firstName} ${item.lastName}` : item.name}</span>
-                            <button type="button" onClick={() => removeItem(item._id)} className="text-blue-600 hover:text-blue-900"><X size={14} /></button>
+                        <div key={item._id} className="bg-emerald-100 text-emerald-800 text-sm font-medium px-2.5 py-1 rounded-full flex items-center gap-2">
+                            <span>{item.name}</span>
+                            <button type="button" onClick={() => removeItem(item._id)} className="text-emerald-600 hover:text-emerald-900"><X size={14} /></button>
                         </div>
                     ))}
                 </div>
@@ -90,8 +90,8 @@ const AssignableMultiSelect = ({ type, placeholder, selectedItems, onSelectionCh
                     {results.length > 0 && (
                         <ul className="absolute z-10 w-full bg-white border rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
                             {results.map(item => (
-                                <li key={item._id} onClick={() => addItem(item)} className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm">
-                                    {type === 'faculty' ? `${item.firstName} ${item.lastName}` : `${item.name} (${item.academicYear})`}
+                                <li key={item._id} onClick={() => addItem(item)} className="px-3 py-2 hover:bg-emerald-50 cursor-pointer text-sm">
+                                    {`${item.name} (${item.academicYear})`}
                                 </li>
                             ))}
                         </ul>
@@ -103,11 +103,11 @@ const AssignableMultiSelect = ({ type, placeholder, selectedItems, onSelectionCh
 };
 
 // --- Main Component ---
-function AdminCourses() {
+function FacultyCourses() {
     const [courses, setCourses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [filters, setFilters] = useState({ search: '', department: '', batchId: '' });
+    const [filters, setFilters] = useState({ search: '' });
     const debouncedSearch = useDebounce(filters.search, 500);
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
     const [modalState, setModalState] = useState({ type: null, data: null });
@@ -123,10 +123,9 @@ function AdminCourses() {
         try {
             const token = Cookies.get('token');
             const params = {
-                page: pagination.page, limit: 6, search: debouncedSearch,
-                department: filters.department, batchId: filters.batchId
+                page: pagination.page, limit: 6, search: debouncedSearch
             };
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/courses/all`, {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/faculty/courses/all`, {
                 headers: { Authorization: `Bearer ${token}` }, params
             });
             if (response.data.success) {
@@ -135,15 +134,16 @@ function AdminCourses() {
             }
         } catch (err) { toast.error("Failed to fetch courses."); }
         finally { setIsLoading(false); }
-    }, [pagination.page, debouncedSearch, filters.department, filters.batchId]);
+    }, [pagination.page, debouncedSearch]);
 
     useEffect(() => {
-        document.title = "Admin | Manage Courses";
-         fetchCourses(); }, [fetchCourses]);
+        document.title = "Faculty | Manage Courses";
+        fetchCourses();
+    }, [fetchCourses]);
 
     const handleFilterChange = (e) => {
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        setPagination(prev => ({...prev, page: 1}));
+        setPagination(prev => ({ ...prev, page: 1 }));
     };
     
     const openModal = (type, data = null) => {
@@ -153,11 +153,11 @@ function AdminCourses() {
             setFormData({
                 title: '', courseCode: '', description: '', photo: '', department: '',
                 academicYear: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-                faculty: [], batches: []
+                batches: []
             });
             setPhotoPreview(null);
         } else if (type === 'edit') {
-            setFormData({ ...data, faculty: data.faculty || [], batches: data.batches || [] });
+            setFormData({ ...data, batches: data.batches || [] });
             setPhotoPreview(data.photo || null);
         }
     };
@@ -165,7 +165,7 @@ function AdminCourses() {
     const openDetailsModal = async (courseId) => {
         try {
             const token = Cookies.get('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/courses/details/${courseId}`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/faculty/courses/details/${courseId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setCourseDetails(res.data.data);
@@ -201,15 +201,14 @@ function AdminCourses() {
             }
             const payload = {
                 ...formData, photo: photoUrl,
-                faculty: formData.faculty.map(f => f._id),
                 batches: formData.batches.map(b => b._id),
             };
             const headers = { Authorization: `Bearer ${token}` };
             if (modalState.type === 'add') {
-                await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/courses/add`, payload, { headers });
+                await axios.post(`${import.meta.env.VITE_API_URL}/api/faculty/courses/add`, payload, { headers });
                 toast.success('Course created successfully!');
             } else if (modalState.type === 'edit') {
-                await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/courses/update/${modalState.data._id}`, payload, { headers });
+                await axios.put(`${import.meta.env.VITE_API_URL}/api/faculty/courses/${modalState.data._id}`, payload, { headers });
                 toast.success('Course updated successfully!');
             }
             fetchCourses();
@@ -225,7 +224,7 @@ function AdminCourses() {
         setIsSubmitting(true);
         try {
             const token = Cookies.get('token');
-            await axios.delete(`${import.meta.env.VITE_API_URL}/api/admin/courses/delete/${modalState.data._id}`, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/faculty/courses/delete/${modalState.data._id}`, { headers: { Authorization: `Bearer ${token}` } });
             toast.success('Course deleted successfully.');
             fetchCourses();
             closeModal();
@@ -247,7 +246,7 @@ function AdminCourses() {
                                 onChange={handleFilterChange} className="w-full pl-10 pr-3 py-2 border rounded-lg" />
                         </div>
                         <button onClick={() => openModal('add')}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700">
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:bg-emerald-700">
                             <PlusCircle size={20} /> Add Course
                         </button>
                     </div>
@@ -265,7 +264,7 @@ function AdminCourses() {
                                         className="w-full h-40 object-cover"
                                     />
                                     <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => openModal('edit', course)} className="bg-white/80 p-1.5 rounded-full text-blue-600 hover:bg-white"><Edit size={16}/></button>
+                                        <button onClick={() => openModal('edit', course)} className="bg-white/80 p-1.5 rounded-full text-emerald-600 hover:bg-white"><Edit size={16}/></button>
                                         <button onClick={() => openModal('delete', course)} className="bg-white/80 p-1.5 rounded-full text-red-500 hover:bg-white"><Trash2 size={16}/></button>
                                     </div>
                                 </div>
@@ -273,18 +272,12 @@ function AdminCourses() {
                                     <h3 className="text-lg font-bold text-slate-800">{course.title}</h3>
                                     <p className="text-sm font-mono text-slate-500 mb-2">{course.courseCode}</p>
                                     <p className="text-sm text-slate-600 mb-4 flex-grow">{course.description?.substring(0, 100)}...</p>
+                                    {course.facultyMetadata !== 'none' && (
+                                        <b className="text-sm text-emerald-600 mb-4 border-b border-emerald-100 pb-2">
+                                            This course has access for {course.facultyMetadata}
+                                        </b>
+                                    )}
                                     <div className="mt-auto pt-4 border-t space-y-3">
-                                        <div>
-                                            <h4 className="text-xs font-semibold text-slate-500 uppercase">Instructors</h4>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                {course.faculty.map(f => (
-                                                    <div key={f._id} className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-full">
-                                                        <UserAvatar user={f} />
-                                                        <span className="text-xs text-slate-600">@{f.firstName} {f.lastName}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
                                         <div>
                                             <h4 className="text-xs font-semibold text-slate-500 uppercase">Batches</h4>
                                             <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -308,11 +301,11 @@ function AdminCourses() {
                         ))}
                     </div>
                 )}
-                 {courses.length === 0 && !isLoading && <p className="text-center p-8 text-slate-500">No courses found for the current filters.</p>}
+                {courses.length === 0 && !isLoading && <p className="text-center p-8 text-slate-500">No courses found for the current filters.</p>}
 
                 {/* Pagination */}
                 <div className="flex justify-center items-center mt-8">
-                     <div className="flex gap-2">
+                    <div className="flex gap-2">
                         <button onClick={() => setPagination(p => ({...p, page: p.page - 1}))} disabled={pagination.page <= 1} className="px-4 py-2 border rounded-lg disabled:opacity-50">Prev</button>
                         <span className="self-center text-sm">Page {pagination.page} of {pagination.totalPages}</span>
                         <button onClick={() => setPagination(p => ({...p, page: p.page + 1}))} disabled={pagination.page >= pagination.totalPages} className="px-4 py-2 border rounded-lg disabled:opacity-50">Next</button>
@@ -320,45 +313,30 @@ function AdminCourses() {
                 </div>
             </motion.div>
 
-             {/* Details Modal */}
+            {/* Details Modal */}
             <Modal isOpen={modalState.type === 'details'} onClose={closeModal} title="Course Details">
                 {courseDetails.course && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2">
                             <div className="flex gap-6 mb-6">
-                            <div className="w-64 h-40 rounded-lg overflow-hidden bg-slate-100 shadow">
-  {courseDetails.course.photo ? (
-    <img
-      src={courseDetails.course.photo}
-      alt={courseDetails.course.title}
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <img 
-        src={`https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(courseDetails.course.title)}`}
-        alt={courseDetails.course.title}
-        className="w-full h-full object-cover"
-    />
-  )}
-</div>
+                                <div className="w-64 h-40 rounded-lg overflow-hidden bg-slate-100 shadow">
+                                    {courseDetails.course.photo ? (
+                                        <img
+                                            src={courseDetails.course.photo}
+                                            alt={courseDetails.course.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <img 
+                                            src={`https://placehold.co/600x400/e2e8f0/475569?text=${encodeURIComponent(courseDetails.course.title)}`}
+                                            alt={courseDetails.course.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    )}
+                                </div>
                                 <div>
                                     <h3 className="text-2xl font-bold">{courseDetails.course.title}</h3>
                                     <p className="text-slate-500">{courseDetails.course.courseCode}</p>
-                                    <div className="mt-4">
-                                        <h4 className="text-sm font-semibold text-slate-500 uppercase mb-2">Instructors</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {courseDetails.course.faculty?.length > 0 ? (
-                                                courseDetails.course.faculty.map((f) => (
-                                                    <div key={f._id} className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full">
-                                                        <UserAvatar user={f} size="w-6 h-6" />
-                                                        <span className="text-sm text-slate-700">@{f.firstName} {f.lastName}</span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-sm text-slate-500">No instructors assigned</p>
-                                            )}
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                             <p className="text-slate-700">{courseDetails.course.description}</p>
@@ -404,7 +382,7 @@ function AdminCourses() {
                                     <ImageIcon className="w-12 h-12 text-slate-400" />
                                 )}
                             </div>
-                            <label htmlFor="photo-upload" className="w-full mt-2 cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                            <label htmlFor="photo-upload" className="w-full mt-2 cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700">
                                 <UploadCloud size={16} /> Choose Image
                             </label>
                             <input id="photo-upload" type="file" className="sr-only" accept="image/png, image/jpeg" onChange={handlePhotoChange} />
@@ -428,31 +406,15 @@ function AdminCourses() {
                     </div>
 
                     <AssignableMultiSelect 
-                        type="faculty" 
-                        placeholder="Search faculty by name..." 
-                        selectedItems={formData.faculty || []} 
-                        onSelectionChange={(items) => {
-                            setFormData(prev => ({
-                                ...prev,
-                                faculty: items
-                            }));
-                        }} 
-                    />
-                    <AssignableMultiSelect 
                         type="batch" 
                         placeholder="Search batches by name..." 
                         selectedItems={formData.batches || []} 
-                        onSelectionChange={(items) => {
-                            setFormData(prev => ({
-                                ...prev,
-                                batches: items
-                            }));
-                        }} 
+                        onSelectionChange={(items) => setFormData(prev => ({ ...prev, batches: items }))} 
                     />
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <button type="button" onClick={closeModal} className="px-6 py-2 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
-                        <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">
+                        <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50">
                             {isSubmitting ? 'Saving...' : 'Save Course'}
                         </button>
                     </div>
@@ -471,4 +433,4 @@ function AdminCourses() {
     );
 }
 
-export default AdminCourses;
+export default FacultyCourses;

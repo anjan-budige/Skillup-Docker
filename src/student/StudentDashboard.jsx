@@ -23,117 +23,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import StudentProfile from './StudentProfile'; // Import the new StudentProfile component
-
-// --- Placeholder Components for Student Routes ---
-
-// 1. Student Home (Dashboard View)
-function StudentHome() {
-  // Mock data for a student's dashboard. Replace with API data.
-  const tasksData = [
-    { week: 'Week 1', tasksCompleted: 3 },
-    { week: 'Week 2', tasksCompleted: 5 },
-    { week: 'Week 3', tasksCompleted: 2 },
-    { week: 'Week 4', tasksCompleted: 4 },
-  ];
-
-  const upcomingDeadlines = [
-    { id: 1, name: 'Physics Lab Report', course: 'PHYS-201', due: '3 days' },
-    { id: 2, name: 'History Essay Outline', course: 'HIST-105', due: '5 days' },
-    { id: 3, name: 'Math Problem Set 5', course: 'MATH-101', due: '1 week' },
-  ];
-
-  const kpiData = [
-    { title: 'Enrolled Courses', value: '5', icon: <BookMarked className="w-8 h-8 text-indigo-600" /> },
-    { title: 'Pending Assignments', value: '3', icon: <AlertCircle className="w-8 h-8 text-amber-600" /> },
-    { title: 'Completed Tasks', value: '27', icon: <CheckCircle2 className="w-8 h-8 text-emerald-600" /> },
-    { title: 'Overall Grade', value: 'A-', icon: <Award className="w-8 h-8 text-rose-600" /> },
-  ];
-
-  return (
-    <div className="space-y-8">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiData.map((item, index) => (
-          <motion.div
-            key={item.title}
-            className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <div>
-              <p className="text-sm font-medium text-gray-500">{item.title}</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{item.value}</p>
-            </div>
-            <div className="bg-gray-100 p-3 rounded-full">{item.icon}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Charts and Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Weekly Task Completion Chart */}
-        <motion.div
-          className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Weekly Task Completion</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={tasksData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis dataKey="week" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(5px)',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                }}
-              />
-              <Bar dataKey="tasksCompleted" name="Tasks Completed" fill="#8b5cf6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Upcoming Deadlines List */}
-        <motion.div
-          className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Upcoming Deadlines</h3>
-          <div className="space-y-4">
-            {upcomingDeadlines.map((task) => (
-              <div key={task.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-700">{task.name}</p>
-                  <p className="text-xs text-gray-500">{task.course}</p>
-                </div>
-                <span className="text-xs font-bold text-red-500 bg-red-100 px-2 py-1 rounded-full">{task.due}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-const ContentPlaceholder = ({ title }) => (
-    <div className="bg-white p-8 rounded-xl border border-gray-200/80 shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-      <p className="mt-2 text-gray-600">Content for the {title.toLowerCase()} page will be displayed here.</p>
-    </div>
-);
-
-const StudentCourses = () => <ContentPlaceholder title="My Courses" />;
-const StudentAssignments = () => <ContentPlaceholder title="My Assignments" />;
-const StudentGrades = () => <ContentPlaceholder title="My Grades" />;
-
+import StudentHome from './components/StudentHome';
+import StudentCourses from './components/StudentCourses';
+import StudentGrades from './components/StudentGrades';
+import StudentTasks from './components/StudentTasks';
+import StudentTaskSubmission from './components/StudentTaskSubmission';
 
 // --- Main Student Dashboard Component ---
 function StudentDashboard() {
@@ -227,7 +121,7 @@ function StudentDashboard() {
   const menuItems = [
     { icon: <LayoutDashboard size={22} />, label: 'Dashboard', path: '/student' },
     { icon: <BookMarked size={22} />, label: 'My Courses', path: '/student/courses' },
-    { icon: <ClipboardList size={22} />, label: 'My Assignments', path: '/student/assignments' },
+    { icon: <ClipboardList size={22} />, label: 'My Assignments', path: '/student/tasks' },
     { icon: <Trophy size={22} />, label: 'My Grades', path: '/student/grades' },
   ];
 
@@ -385,8 +279,9 @@ function StudentDashboard() {
            <Routes>
               <Route path="/" element={<StudentHome />} />
               <Route path="/courses" element={<StudentCourses />} />
-              <Route path="/assignments" element={<StudentAssignments />} />
+              <Route path="/tasks" element={<StudentTasks />} />
               <Route path="/grades" element={<StudentGrades />} />
+              <Route path="/tasks/:taskId" element={<StudentTaskSubmission />} />
               <Route path="/profile" element={<StudentProfile />} />
             </Routes> 
           </div>

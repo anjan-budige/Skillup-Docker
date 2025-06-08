@@ -70,9 +70,9 @@ router.post('/student/register', async (req, res) => {
       firstName,
       lastName,
       email,
-      username,
+      username: username.toUpperCase(),
       password,
-      rollNumber,
+      rollNumber: rollNumber.toUpperCase(),
       department
     });
 
@@ -479,8 +479,6 @@ router.post('/user-details', authenticateToken, async (req, res) => {
         message: 'User not found'
       });
     }
-
-    console.log('User found:', user);
     res.json({
       success: true,
       data: user

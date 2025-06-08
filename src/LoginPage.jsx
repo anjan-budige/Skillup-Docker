@@ -3,7 +3,7 @@ import { AcademicCapIcon, DocumentTextIcon, ChartBarIcon, ArrowUpTrayIcon as Upl
 import { motion } from 'framer-motion';
 import { ToastContainer, toast } from 'react-toastify';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import crypto from 'crypto-js';
 
@@ -51,7 +51,7 @@ const verifySessionHash = (sessionData, hash) => {
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const location = useLocation(); // Use useLocation to get current path
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedRole, setSelectedRole] = useState('Student');
@@ -68,7 +68,7 @@ function LoginPage() {
   });
 
   useEffect(() => {
-    document.title = 'SkillUp Homepage';
+    document.title = 'SkillUp | Login';
   }, []);
 
   // Clear messages when modal is opened or mode is switched
@@ -79,30 +79,48 @@ function LoginPage() {
 
   // Navigation guard function
   const redirectToDashboard = (role) => {
-    if (isRedirecting) return;
-    setIsRedirecting(true);
+    console.log(`Redirecting to dashboard for role: ${role}`);
     const path = `/${role.toLowerCase()}`;
-    setTimeout(() => {
-      navigate(path, { replace: true });
-    }, 1000);
-  };
+    
+    // Use a more reliable navigation approach
+    try {
+        navigate(path, { 
+            replace: true,
+            state: { from: 'login' }
+        });
+        console.log(`Successfully navigated to: ${path}`);
+    } catch (error) {
+        console.error('Navigation error:', error);
+    }
+};
 
-  // Check for existing session on component mount
-  useEffect(() => {
-    const checkSession = () => {
-      const token = Cookies.get('token');
-      const session = Cookies.get('session');
-      
-      if (!token || !session || isRedirecting) return;
-      
-      try {
+// Check for existing session on component mount - only once
+useEffect(() => {
+  let isMounted = true; // To prevent actions after component unmount
+  const checkSession = () => {
+    if (!isMounted) return; // Prevent actions if component is unmounted
+
+    const token = Cookies.get('token');
+    const session = Cookies.get('session');
+    
+    console.log('Checking session...');
+    console.log('Token:', token);
+    console.log('Session:', session);
+    
+    if (!token || !session) {
+        console.log('No valid session, skipping session check.');
+        return;
+    }
+    
+    console.log('Checking session validity...');
+    try {
         const sessionData = JSON.parse(session);
         
         // Verify session hash
         const { hash, timestamp, data } = sessionData;
         const calculatedHash = crypto.SHA256(JSON.stringify({
-          ...data,
-          timestamp
+            ...data,
+            timestamp
         })).toString();
 
         // Check if hash matches and session is not expired (1 hour)
@@ -110,26 +128,33 @@ function LoginPage() {
         const isExpired = Date.now() - timestamp > 3600000; // 1 hour in milliseconds
 
         if (!isHashValid || isExpired) {
-          console.error('Invalid or expired session');
-          handleLogout();
-          return;
+            console.error('Invalid or expired session');
+            handleLogout();
+            return;
         }
 
-        const currentPath = window.location.pathname;
+        const currentPath = location.pathname; // Use React Router's location
         const targetPath = `/${data.role.toLowerCase()}`;
         
-        // Only redirect if we're not already on the correct path
+        // Only redirect if we're not already on the correct path and not redirecting
         if (currentPath !== targetPath) {
-          redirectToDashboard(data.role);
+            console.log(`Current path: ${currentPath}, Target path: ${targetPath}`);
+            redirectToDashboard(data.role);
+        } else {
+            console.log('Already on the correct path, no redirect needed.');
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Session validation error:', error);
         handleLogout();
-      }
-    };
+    }
+  };
 
-    checkSession();
-  }, [isRedirecting]);
+  // Run session check only once on component mount
+  checkSession();
+  return () => {
+    isMounted = false; // Clean up to prevent actions after unmount
+  };
+}, [location.pathname]); // Depend on location.pathname to re-check only on path change
 
   const handleInputChange = (e) => {
     setFormData({
@@ -140,10 +165,8 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (isRedirecting) return;
-    
     try {
-      const loginEndpoint = `http://localhost:5000/api/auth/${selectedRole.toLowerCase()}/login`;
+      const loginEndpoint = `${import.meta.env.VITE_API_URL}/api/auth/${selectedRole.toLowerCase()}/login`;
       
       const response = await fetch(loginEndpoint, {
         method: 'POST',
@@ -209,7 +232,8 @@ function LoginPage() {
         });
 
         // Redirect to appropriate dashboard
-        redirectToDashboard(data.user.role);
+        const targetPath = `/${data.user.role.toLowerCase()}`;
+        navigate(targetPath, { replace: true });
       } else {
         toast.error(data.message || 'Login failed. Please check your credentials.', {
           position: "top-right",
@@ -253,11 +277,8 @@ function LoginPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (isRedirecting) return;
-    
     try {
-      const registerEndpoint = `http://localhost:5000/api/auth/${selectedRole.toLowerCase()}/register`;
-      
+      const registerEndpoint = `${import.meta.env.VITE_API_URL}/api/auth/${selectedRole.toLowerCase()}/register`;
       // Prepare registration data based on role
       let registrationData = {
         firstName: formData.firstName,

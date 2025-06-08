@@ -7,8 +7,8 @@ import Task from '../models/Task.js';
 import Submission from '../models/Submission.js';
 import Course from '../models/Course.js';  
 import Batch from '../models/Batch.js';
-import Grade from '../models/grade.js';
 import Setting from '../models/Settings.js';
+import Grade from '../models/Grade.js';
 
 
 const router = express.Router();
@@ -341,60 +341,26 @@ router.delete('/faculty/delete/:id', authenticateAdmin, async (req, res) => {
 // @desc    Add a new student
 // @route   POST /api/admin/students/add
 router.post('/students/add', authenticateAdmin, async (req, res) => {
-  try {
-      const { 
-          firstName, lastName, email, username, password, 
-          department, rollNumber, semester, batch 
-      } = req.body;
-      
-      // --- Step 1: Validation ---
-      if (!firstName || !lastName || !email || !username || !password || !department || !rollNumber) {
-          return res.status(400).json({ success: false, message: 'Please provide all required fields.' });
-      }
+    try {
+        const { batch: batchIds, ...studentData } = req.body;
+        const { firstName, lastName, email, username, password, department, rollNumber } = studentData;
+        if (!firstName || !lastName || !email || !username || !password || !department || !rollNumber) {
+            return res.status(400).json({ success: false, message: 'All required fields must be filled.' });
+        }
+        const exists = await Student.findOne({ $or: [{ email }, { username }, { rollNumber }] });
+        if (exists) return res.status(409).json({ success: false, message: 'Email, username, or roll number already exists.'});
+        
+        const newStudent = await Student.create({ ...studentData, batch: [] });
 
-      const exists = await Student.findOne({ $or: [{ email }, { username }, { rollNumber }] });
-      if (exists) {
-          return res.status(409).json({ success: false, message: 'A student with this email, username, or roll number already exists.' });
-      }
-
-      // --- Step 2: Prepare the data for creation ---
-      const studentData = {
-          firstName, lastName, email, username, password,
-          department, rollNumber, semester,
-          // THIS IS THE FIX: Explicitly handle the batch value.
-          // If the batch value from the form is an empty string, set it to null.
-          batch: batch ? batch : null 
-      };
-      
-      // --- Step 3: Create the Student Document ---
-      const newStudent = await Student.create(studentData);
-      
-      // --- Step 4: Synchronize with the Batch document (Highly Recommended) ---
-      if (newStudent.batch) {
-          await Batch.findByIdAndUpdate(
-              newStudent.batch,
-              { $push: { students: newStudent._id } }
-          );
-      }
-      
-      // --- Step 5: Prepare and Send Response ---
-      const studentResponse = newStudent.toObject();
-      delete studentResponse.password;
-
-      res.status(201).json({ 
-          success: true, 
-          data: studentResponse, 
-          message: 'Student created successfully.' 
-      });
-
-  } catch (error) {
-      // This will now catch other potential errors, since the CastError is fixed.
-      if (error.name === 'CastError') {
-          return res.status(400).json({ success: false, message: `Invalid data format for field: ${error.path}` });
-      }
-      console.error("Error adding student:", error);
-      res.status(500).json({ success: false, message: 'Server error while adding student.' });
-  }
+        if (batchIds && batchIds.length > 0) {
+            await Batch.updateMany({ _id: { $in: batchIds } }, { $push: { students: newStudent._id } });
+            await Course.updateMany({ batches: { $in: batchIds } }, { $push: { students: newStudent._id } });
+        }
+        
+        res.status(201).json({ success: true, data: newStudent });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error adding student.' });
+    }
 });
 
 // @desc    Fetch students with enrolled courses, search, sort, and pagination
@@ -402,87 +368,110 @@ router.post('/students/add', authenticateAdmin, async (req, res) => {
 // @desc    Fetch students with enrolled courses, search, sort, and pagination
 // @route   GET /api/admin/students/all
 router.get('/students/all', authenticateAdmin, async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || '';
-    const sortBy = req.query.sortBy || 'createdAt';
-    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
-
-    const searchQuery = search ? {
-      $or: [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { rollNumber: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } },
-      ]
-    } : {};
-
-    const totalStudents = await Student.countDocuments(searchQuery);
-
-    const studentList = await Student.aggregate([
-      // Stage 1: Find matching students
-      { $match: searchQuery },
-      // Stage 2: Sort and Paginate
-      { $sort: { [sortBy]: sortOrder } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-
-      // Stage 3: Join with Courses collection
-      {
-        $lookup: {
-          from: 'courses', // The collection to join
-          let: { studentBatchId: '$batch' }, // Define a variable from the student's document
-          pipeline: [
-            // This pipeline runs on the 'courses' collection for each student
-            {
-              // Match courses where the student's batch ID is in the course's 'batches' array
-              $match: {
-                $expr: {
-                  $in: ['$$studentBatchId', '$batches']
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const search = req.query.search || '';
+      const sortBy = req.query.sortBy || 'createdAt';
+      const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+  
+      const searchQuery = search ? {
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { rollNumber: { $regex: search, $options: 'i' } },
+          { department: { $regex: search, $options: 'i' } }
+        ]
+      } : {};
+  
+      const totalStudents = await Student.countDocuments(searchQuery);
+  
+      const studentList = await Student.aggregate([
+        { $match: searchQuery },
+        { $sort: { [sortBy]: sortOrder } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+  
+        // Lookup matching courses based on batch intersection
+        {
+          $lookup: {
+            from: 'courses',
+            let: { student_batches: { $ifNull: ['$batch', []] } }, // use 'batch' here
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $gt: [
+                      {
+                        $size: {
+                          $setIntersection: [
+                            '$$student_batches',
+                            { $ifNull: ['$batches', []] }
+                          ]
+                        }
+                      },
+                      0
+                    ]
+                  }
+                }
+              },
+              {
+                $project: {
+                  _id: 1,
+                  title: 1,
+                  courseCode: 1
                 }
               }
-            },
-            // Project only the fields we need from the matched courses
-            {
-              $project: {
-                _id: 0, // Exclude the id
-                title: 1 // Include the title
+            ],
+            as: 'matchedCourses'
+          }
+        },
+  
+        // Final output
+        {
+          $project: {
+            _id: 1,
+            firstName: 1,
+            lastName: 1,
+            email: 1,
+            rollNumber: 1,
+            department: 1,
+            semester: 1,
+            batch: 1, // keep original batch array
+            photo: 1,
+            username: 1,
+            courses: {
+              $map: {
+                input: '$matchedCourses',
+                as: 'course',
+                in: {
+                  id: '$$course._id',
+                  title: '$$course.title',
+                  code: '$$course.courseCode'
+                }
               }
             }
-          ],
-          as: 'enrolledCourses' // The name of the new array field
+          }
         }
-      },
-      
-      // Stage 4: Reshape the final output
-      {
-        $project: {
-          _id: 1, studentId: 1, firstName: 1, lastName: 1, email: 1,
-          rollNumber: 1, department: 1, semester: 1, batch: 1,
-          photo: 1, username: 1,
-          // Extract just the titles from the joined documents
-          courses: '$enrolledCourses.title'
+      ]);
+  
+      res.json({
+        success: true,
+        data: studentList,
+        pagination: {
+          total: totalStudents,
+          page,
+          totalPages: Math.ceil(totalStudents / limit)
         }
-      }
-    ]);
-
-    res.json({
-      success: true,
-      data: studentList,
-      pagination: {
-        total: totalStudents,
-        page,
-        totalPages: Math.ceil(totalStudents / limit)
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching students:', error);
-    res.status(500).json({ success: false, message: 'Server error fetching students.' });
-  }
-});
+      });
+  
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      res.status(500).json({ success: false, message: 'Server error fetching students.' });
+    }
+  });
+  
 
 
 
@@ -490,7 +479,7 @@ router.get('/students/all', authenticateAdmin, async (req, res) => {
 // @route   PUT /api/admin/students/update/:id
 router.put('/students/update/:id', authenticateAdmin, async (req, res) => {
   try {
-      const { firstName, lastName, email, username, department, rollNumber, semester, batch } = req.body;
+      const { firstName, lastName, email, username, department, rollNumber, semester } = req.body;
       const student = await Student.findById(req.params.id);
       if (!student) return res.status(404).json({ success: false, message: 'Student not found.' });
 
@@ -509,7 +498,6 @@ router.put('/students/update/:id', authenticateAdmin, async (req, res) => {
       student.department = department ?? student.department;
       student.rollNumber = rollNumber ?? student.rollNumber;
       student.semester = semester ?? student.semester;
-      student.batch = batch ?? student.batch;
 
       const updatedStudent = await student.save();
       res.json({ success: true, data: updatedStudent });
@@ -611,11 +599,11 @@ router.post('/batches/add', authenticateAdmin, async (req, res) => {
           creatorModel: 'Admin'
       });
 
-      // --- CRUCIAL: Update the 'batch' field for all assigned students ---
+      // --- CRUCIAL: Update the 'batches' field for all assigned students ---
       if (students && students.length > 0) {
           await Student.updateMany(
               { _id: { $in: students } },
-              { $set: { batch: newBatch._id } }
+              { $addToSet: { batch: newBatch._id } }  // Changed to $addToSet and correct field name 'batches'
           );
       }
 
@@ -626,7 +614,6 @@ router.post('/batches/add', authenticateAdmin, async (req, res) => {
   }
 });
 
-
 router.put('/batches/update/:id', authenticateAdmin, async (req, res) => {
   try {
       const { name, academicYear, students, department } = req.body;
@@ -634,26 +621,30 @@ router.put('/batches/update/:id', authenticateAdmin, async (req, res) => {
 
       const batch = await Batch.findById(batchId);
       if (!batch) return res.status(404).json({ success: false, message: 'Batch not found.' });
-
-      // --- SYNCHRONIZATION LOGIC ---
-
+      
+      // Compare original and new student lists
       const originalStudentIds = batch.students.map(id => id.toString());
       const newStudentIds = students.map(id => id.toString());
       
-      // 1. Find which students were REMOVED from the batch
+      // Find removed and added students
       const removedStudentIds = originalStudentIds.filter(id => !newStudentIds.includes(id));
+      const addedStudentIds = newStudentIds.filter(id => !originalStudentIds.includes(id));
+
+      // Handle removed students
       if (removedStudentIds.length > 0) {
-          // A) Remove the batch reference from these students
+          // Remove batch reference from students
           await Student.updateMany(
               { _id: { $in: removedStudentIds } },
-              { $unset: { batch: "" } }
+              { $pull: { batch: batchId } }
           );
-          // B) Find all tasks associated with this batch and remove the grades for the removed students
+
+          // Get all courses and tasks for this batch
           const coursesWithThisBatch = await Course.find({ batches: batchId }).select('_id');
           const courseIds = coursesWithThisBatch.map(c => c._id);
           const tasksInTheseCourses = await Task.find({ course: { $in: courseIds } }).select('_id');
           const taskIds = tasksInTheseCourses.map(t => t._id);
 
+          // Delete grades for removed students
           if (taskIds.length > 0) {
               await Grade.deleteMany({
                   task: { $in: taskIds },
@@ -662,58 +653,64 @@ router.put('/batches/update/:id', authenticateAdmin, async (req, res) => {
           }
       }
 
-      // 2. Find which students were ADDED to the batch
-      const addedStudentIds = newStudentIds.filter(id => !originalStudentIds.includes(id));
+      // Handle added students
       if (addedStudentIds.length > 0) {
-          // A) Add the batch reference to these new students
+          // Add batch reference to students
           await Student.updateMany(
               { _id: { $in: addedStudentIds } },
-              { $set: { batch: batchId } }
+              { $addToSet: { batch: batchId } }
           );
 
-          // B) --- RETROACTIVE ENROLLMENT ---
-          // Find all courses and their tasks that this batch is enrolled in
+          // Get all courses and tasks for this batch
           const coursesWithThisBatch = await Course.find({ batches: batchId }).select('_id');
           const courseIds = coursesWithThisBatch.map(c => c._id);
           const tasksInTheseCourses = await Task.find({ course: { $in: courseIds } }).select('_id');
           const taskIds = tasksInTheseCourses.map(t => t._id);
-          
+
+          // Create grade placeholders for new students
           if (taskIds.length > 0) {
               const newGradePlaceholders = [];
-              // For each newly added student...
               for (const studentId of addedStudentIds) {
-                  // ...and for each task in the courses this batch belongs to...
                   for (const taskId of taskIds) {
-                      // ...create a new grade placeholder.
-                      newGradePlaceholders.push({
-                          task: taskId,
-                          student: studentId,
-                          course: courseIds[0], // Assuming tasks belong to one course in this context
-                      });
+                      const task = await Task.findById(taskId).select('course');
+                      if (task) {
+                          newGradePlaceholders.push({
+                              task: taskId,
+                              student: studentId,
+                              course: task.course,
+                              status: 'Pending'
+                          });
+                      }
                   }
               }
               
               if (newGradePlaceholders.length > 0) {
-                  // Using insertMany is highly efficient for bulk operations.
                   await Grade.insertMany(newGradePlaceholders, { ordered: false });
               }
           }
       }
     
-      // 3. Finally, update the batch document itself
-      batch.name = name ?? batch.name;
-      batch.academicYear = academicYear ?? batch.academicYear;
-      batch.department = department ?? batch.department;
-      batch.students = students ?? batch.students;
-
-      await batch.save();
-      
-      const populatedBatch = await Batch.findById(batch._id).populate('students', 'firstName lastName');
+      // Update batch document
+      const updatedBatch = await Batch.findByIdAndUpdate(
+          batchId,
+          {
+              $set: {
+                  name: name ?? batch.name,
+                  academicYear: academicYear ?? batch.academicYear,
+                  department: department ?? batch.department,
+                  students: students ?? batch.students
+              }
+          },
+          { new: true }
+      ).populate('students', 'firstName lastName');
         
-      res.json({ success: true, data: populatedBatch, message: 'Batch updated successfully. Student enrollments synchronized.' });
+      res.json({ 
+          success: true, 
+          data: updatedBatch, 
+          message: 'Batch updated successfully. Student enrollments synchronized.' 
+      });
 
   } catch (error) {
-      console.error('Error updating batch:', error);
       res.status(500).json({ success: false, message: 'Server error updating batch.' });
   }
 });
@@ -731,15 +728,43 @@ router.delete('/batches/delete/:id', authenticateAdmin, async (req, res) => {
 
       const studentIdsInBatch = batch.students;
 
-      // Un-assign students from this batch and remove them from any course that had this batch
+      // Get all courses that had this batch
+      const coursesWithBatch = await Course.find({ batches: batchId });
+      const courseIds = coursesWithBatch.map(course => course._id);
+
+      // Get all tasks from these courses
+      const tasks = await Task.find({ course: { $in: courseIds } });
+      const taskIds = tasks.map(task => task._id);
+
+      // Un-assign students from this batch and remove all associated data
       await Promise.all([
-          Student.updateMany({ _id: { $in: studentIdsInBatch } }, { $unset: { batch: "" } }),
-          Course.updateMany({ batches: batchId }, { $pull: { students: { $in: studentIdsInBatch }, batches: batchId } }),
+          // Remove batch from students
+          Student.updateMany(
+              { _id: { $in: studentIdsInBatch } }, 
+              { $pull: { batch: batchId } }
+          ),
+          // Remove students and batch from courses
+          Course.updateMany(
+              { batches: batchId }, 
+              { $pull: { students: { $in: studentIdsInBatch }, batches: batchId } }
+          ),
+          // Delete all submissions for these tasks from these students
+          Submission.deleteMany({
+              student: { $in: studentIdsInBatch },
+              task: { $in: taskIds }
+          }),
+          // Delete all grades for these tasks from these students
+          Grade.deleteMany({
+              student: { $in: studentIdsInBatch },
+              task: { $in: taskIds }
+          }),
+          // Finally delete the batch
           Batch.findByIdAndDelete(batchId)
       ]);
 
-      res.json({ success: true, message: 'Batch deleted and all associations removed.' });
+      res.json({ success: true, message: 'Batch deleted and all associated data removed.' });
   } catch (error) {
+      console.error('Error deleting batch:', error);
       res.status(500).json({ success: false, message: 'Server error deleting batch.' });
   }
 });
@@ -860,13 +885,108 @@ router.post('/courses/add', authenticateAdmin, async (req, res) => {
 // @route   PUT /api/admin/courses/update/:id
 router.put('/courses/update/:id', authenticateAdmin, async (req, res) => {
   try {
-      const course = await Course.findByIdAndUpdate(req.params.id, req.body, {
-          new: true,
-          runValidators: true
-      });
-      if (!course) return res.status(404).json({ success: false, message: 'Course not found.' });
+      const { batches: newBatchIds, faculty: newFacultyIds, ...updateData } = req.body;
+      const courseId = req.params.id;
+
+      // First get the current course to compare batches and faculty
+      const currentCourse = await Course.findById(courseId);
+      if (!currentCourse) {
+          return res.status(404).json({ success: false, message: 'Course not found.' });
+      }
+
+      // Update the course with new data including batches and faculty
+      const course = await Course.findByIdAndUpdate(
+          courseId, 
+          { 
+              ...updateData, 
+              batches: newBatchIds || [], // Explicitly set batches array
+              faculty: newFacultyIds || [] // Explicitly set faculty array
+          },
+          {
+              new: true,
+              runValidators: true
+          }
+      );
+
+      // Get all tasks for this course
+      const tasks = await Task.find({ course: courseId });
+      const taskIds = tasks.map(task => task._id);
+
+      // Handle batch changes
+      const oldBatchIds = currentCourse.batches.map(id => id.toString());
+      const newBatchIdsStr = (newBatchIds || []).map(id => id.toString());
+
+      // Handle added batches - add tasks and grades to students in new batches
+      const addedBatchIds = newBatchIdsStr.filter(id => !oldBatchIds.includes(id));
+      if (addedBatchIds.length > 0) {
+          // Get all students in the added batches
+          const studentsInNewBatches = await Student.find({ batch: { $in: addedBatchIds } });
+          
+          // For each student, add all course tasks and create grade entries
+          for (const student of studentsInNewBatches) {
+              // Add tasks to student
+              await Student.findByIdAndUpdate(
+                  student._id,
+                  { $addToSet: { tasks: { $each: taskIds } } }
+              );
+
+              // Create grade entries for each task
+              const gradePlaceholders = taskIds.map(taskId => ({
+                  task: taskId,
+                  student: student._id,
+                  course: courseId,
+              }));
+              await Grade.insertMany(gradePlaceholders, { ordered: false });
+          }
+      }
+
+      // Handle removed batches - remove tasks and grades from students in removed batches
+      const removedBatchIds = oldBatchIds.filter(id => !newBatchIdsStr.includes(id));
+      if (removedBatchIds.length > 0) {
+          // Get all students in the removed batches
+          const studentsInRemovedBatches = await Student.find({ batch: { $in: removedBatchIds } });
+          
+          // For each student, remove all course tasks and grades
+          for (const student of studentsInRemovedBatches) {
+              // Remove tasks from student
+              await Student.findByIdAndUpdate(
+                  student._id,
+                  { $pullAll: { tasks: taskIds } }
+              );
+
+              // Remove grades for this student's tasks
+              await Grade.deleteMany({
+                  student: student._id,
+                  task: { $in: taskIds }
+              });
+          }
+      }
+
+      // Handle faculty changes
+      const oldFacultyIds = currentCourse.faculty.map(id => id.toString());
+      const newFacultyIdsStr = (newFacultyIds || []).map(id => id.toString());
+
+      // Handle removed faculty - remove course from faculty's courses
+      const removedFacultyIds = oldFacultyIds.filter(id => !newFacultyIdsStr.includes(id));
+      if (removedFacultyIds.length > 0) {
+          await Faculty.updateMany(
+              { _id: { $in: removedFacultyIds } },
+              { $pull: { courses: courseId } }
+          );
+      }
+
+      // Handle added faculty - add course to faculty's courses
+      const addedFacultyIds = newFacultyIdsStr.filter(id => !oldFacultyIds.includes(id));
+      if (addedFacultyIds.length > 0) {
+          await Faculty.updateMany(
+              { _id: { $in: addedFacultyIds } },
+              { $addToSet: { courses: courseId } }
+          );
+      }
+
       res.json({ success: true, data: course });
   } catch (error) {
+      console.error('Error updating course:', error);
       res.status(500).json({ success: false, message: 'Server error updating course.' });
   }
 });
@@ -875,14 +995,23 @@ router.put('/courses/update/:id', authenticateAdmin, async (req, res) => {
 // @route   DELETE /api/admin/courses/delete/:id
 router.delete('/courses/delete/:id', authenticateAdmin, async (req, res) => {
   try {
-      const course = await Course.findByIdAndDelete(req.params.id);
+      const course = await Course.findById(req.params.id);
       if (!course) return res.status(404).json({ success: false, message: 'Course not found.' });
-      
-      // Optional: Also delete all tasks associated with this course
-      await Task.deleteMany({ course: course._id });
 
-      res.json({ success: true, message: 'Course and associated tasks deleted.' });
+      // Get all tasks for this course
+      const tasks = await Task.find({ course: course._id });
+      const taskIds = tasks.map(task => task._id);
+
+      // Delete all grades and tasks in parallel
+      await Promise.all([
+          Grade.deleteMany({ task: { $in: taskIds } }),
+          Task.deleteMany({ course: course._id }),
+          Course.findByIdAndDelete(course._id)
+      ]);
+
+      res.json({ success: true, message: 'Course, tasks, and grades deleted successfully.' });
   } catch (error) {
+      console.error('Error deleting course:', error);
       res.status(500).json({ success: false, message: 'Server error deleting course.' });
   }
 });
@@ -1224,7 +1353,7 @@ router.get('/tasks/:id/grades', authenticateAdmin, async (req, res) => {
           .populate('student', 'firstName lastName email rollNumber photo')
           .populate({
               path: 'submission',
-              select: 'submittedAt status attachments'
+              select: 'submittedAt status attachments content createdAt updatedAt'
           });
 
       res.json({ success: true, task, grades });
@@ -1275,8 +1404,8 @@ router.get('/analytics', authenticateAdmin, async (req, res) => {
         let dateFilter = {};
         if (startDate && endDate) {
             dateFilter.createdAt = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
+                $gte: new Date(new Date(startDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })),
+                $lte: new Date(new Date(endDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
             };
         }
 
@@ -1368,7 +1497,11 @@ router.get('/analytics', authenticateAdmin, async (req, res) => {
                 kpis: kpiData[0] || { totalSubmissions: 0, totalGraded: 0, averageScore: 0 },
                 submissionTrend,
                 coursePerformance,
-                facultyPerformance
+                facultyPerformance,
+                dateRange: {
+                    startDate: startDate ? new Date(startDate) : null,
+                    endDate: endDate ? new Date(endDate) : null
+                }
             }
         });
 

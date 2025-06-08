@@ -4,6 +4,14 @@ import Cookies from 'js-cookie';
 import crypto from 'crypto-js';
 import { AcademicCapIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
+import FacultyHome from './components/FacultyHome';
+import { UserCog, UsersRound } from 'lucide-react';
+import FacultyCourses from './components/FacultyCourses';
+import FacultyTasks from './components/FacultyTasks';
+import FacultyBatches from './components/FacultyBatches';
+import FacultyAnalytics from './components/FacultyAnalytics';
+import FacultyStudents from './components/FacultyStudents';
+import FacultyTaskSubmissions from './components/FacultyTaskSubmissions.jsx';
 import {
   Bell,
   Menu,
@@ -22,121 +30,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import FacultyProfile from './FacultyProfile';
 
-// --- Placeholder Components for Faculty Routes ---
-// You can replace these with your actual component files later.
 
-// 1. Faculty Home (Dashboard View)
-function FacultyHome() {
-  // Mock data for charts and stats. Replace with API data.
-  const submissionData = [
-    { week: 'Week 1', submitted: 85, pending: 15 },
-    { week: 'Week 2', submitted: 92, pending: 8 },
-    { week: 'Week 3', submitted: 78, pending: 22 },
-    { week: 'Week 4', submitted: 95, pending: 5 },
-  ];
-
-  const recentSubmissions = [
-    { id: 1, student: 'Alice Johnson', assignment: 'Calculus HW 1', course: 'MATH-101' },
-    { id: 2, student: 'Bob Williams', assignment: 'Lab Report 2', course: 'PHYS-201' },
-    { id: 3, student: 'Charlie Brown', assignment: 'Essay Draft', course: 'ENG-102' },
-  ];
-
-  const kpiData = [
-    { title: 'My Courses', value: '4', icon: <BookOpen className="w-8 h-8 text-emerald-600" /> },
-    { title: 'Total Students', value: '112', icon: <Users className="w-8 h-8 text-sky-600" /> },
-    { title: 'Active Assignments', value: '8', icon: <ClipboardCheck className="w-8 h-8 text-amber-600" /> },
-    { title: 'Avg. Grade', value: '88%', icon: <BarChart2 className="w-8 h-8 text-rose-600" /> },
-  ];
-
-  return (
-    <div className="space-y-8">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiData.map((item, index) => (
-          <motion.div
-            key={item.title}
-            className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm flex items-center justify-between"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <div>
-              <p className="text-sm font-medium text-gray-500">{item.title}</p>
-              <p className="text-3xl font-bold text-gray-800 mt-1">{item.value}</p>
-            </div>
-            <div className="bg-gray-100 p-3 rounded-full">{item.icon}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Charts and Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Submission Rate Chart */}
-        <motion.div
-          className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Weekly Assignment Submissions</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={submissionData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis dataKey="week" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(5px)',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.75rem',
-                }}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="submitted" stroke="#10b981" strokeWidth={2} name="Submitted" />
-              <Line type="monotone" dataKey="pending" stroke="#f43f5e" strokeWidth={2} name="Pending" />
-            </LineChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Recent Submissions List */}
-        <motion.div
-          className="bg-white p-6 rounded-xl border border-gray-200/80 shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {recentSubmissions.map((sub) => (
-              <div key={sub.id} className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
-                  {sub.student.charAt(0)}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-700">{sub.student}</p>
-                  <p className="text-xs text-gray-500">Submitted: {sub.assignment}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-const ContentPlaceholder = ({ title }) => (
-    <div className="bg-white p-8 rounded-xl border border-gray-200/80 shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-      <p className="mt-2 text-gray-600">Content for the {title.toLowerCase()} page will be displayed here.</p>
-    </div>
-);
-
-const FacultyCourses = () => <ContentPlaceholder title="My Courses" />;
-const FacultyAssignments = () => <ContentPlaceholder title="Assignments" />;
-const FacultyStudents = () => <ContentPlaceholder title="Student Management" />;
-const FacultyAnalytics = () => <ContentPlaceholder title="Performance Analytics" />;
 
 
 // --- Main Faculty Dashboard Component ---
@@ -234,9 +128,10 @@ function FacultyDashboard() {
 
   const menuItems = [
     { icon: <LayoutDashboard size={22} />, label: 'Dashboard', path: '/faculty' },
+    { icon: <UserCog size={22} />, label: 'Students', path: '/faculty/students' },
+    { icon: <UsersRound size={22} />, label: 'Batches', path: '/faculty/batches' },
     { icon: <BookOpen size={22} />, label: 'My Courses', path: '/faculty/courses' },
-    { icon: <ClipboardCheck size={22} />, label: 'Assignments', path: '/faculty/assignments' },
-    { icon: <Users size={22} />, label: 'Students', path: '/faculty/students' },
+    { icon: <ClipboardCheck size={22} />, label: 'Tasks', path: '/faculty/tasks' },
     { icon: <BarChart2 size={22} />, label: 'Analytics', path: '/faculty/analytics' },
   ];
 
@@ -391,9 +286,11 @@ function FacultyDashboard() {
             )}
            <Routes>
               <Route path="/" element={<FacultyHome />} />
-              <Route path="/courses" element={<FacultyCourses />} />
-              <Route path="/assignments" element={<FacultyAssignments />} />
               <Route path="/students" element={<FacultyStudents />} />
+              <Route path="/batches" element={<FacultyBatches />} />
+              <Route path="/courses" element={<FacultyCourses />} />
+              <Route path="/tasks" element={<FacultyTasks />} />
+              <Route path="/tasks/:taskId" element={<FacultyTaskSubmissions />} />
               <Route path="/analytics" element={<FacultyAnalytics />} />
               <Route path="/profile" element={<FacultyProfile />} />
             </Routes> 

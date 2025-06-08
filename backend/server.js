@@ -5,6 +5,8 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import AdminRoutes from './routes/admin.js';
+import FacultyRoutes from './routes/faculty.js';
+import StudentRoutes from './routes/student.js';
 
 // Load environment variables
 config();
@@ -35,6 +37,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', AdminRoutes);
+app.use('/api/faculty', FacultyRoutes);
+app.use('/api/student', StudentRoutes);
 
 // Default route
 app.get('/', (req, res) => {
