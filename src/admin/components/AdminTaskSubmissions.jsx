@@ -7,7 +7,7 @@ import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// --- Reusable Components ---
+
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-2xl' }) {
     if (!isOpen) return null;
@@ -44,7 +44,7 @@ const SubmissionStatus = ({ submission }) => {
 };
 
 
-// --- Main Grading Interface Component ---
+
 function AdminTaskSubmissions() {
     const { taskId } = useParams();
     const navigate = useNavigate();
@@ -68,7 +68,7 @@ function AdminTaskSubmissions() {
             }
         } catch (error) {
             toast.error("Failed to fetch grading data.");
-            navigate('/admin/tasks'); // Navigate away if task doesn't exist
+            navigate('/admin/tasks'); 
         } finally {
             setIsLoading(false);
         }
@@ -83,6 +83,10 @@ function AdminTaskSubmissions() {
         const numericValue = value === '' ? '' : Number(value);
         if (numericValue > task.maxPoints) {
             toast.warn(`Grade cannot exceed ${task.maxPoints} points.`);
+            return;
+        }
+        if (numericValue < 0) {
+            toast.warn("Grade cannot be negative.");
             return;
         }
         setGrades(prev => prev.map(g => 
@@ -161,7 +165,7 @@ function AdminTaskSubmissions() {
                                     <Calendar size={18} className="text-slate-400"/>
                                     <div>
                                         <p className="text-xs text-slate-500">Due Date</p>
-                                        <p className="font-semibold">{new Date(task.dueDate).toLocaleDateString()}</p>
+                                        <p className="font-semibold">{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -200,7 +204,7 @@ function AdminTaskSubmissions() {
                             </thead>
                             <tbody>
     {grades.map(grade => {
-        // Add null check for grade.student
+        
         if (!grade?.student) return null;
         
         const isEditing = editableRow === grade.student._id;
@@ -226,7 +230,7 @@ function AdminTaskSubmissions() {
                     {isEditing ? (
                         <div className="flex items-center gap-1">
                             <input type="number" value={grade.grade || ''}
-                                // This one is correct
+                                
                                 onChange={(e) => handleGradeChange(grade._id, e.target.value)}
                                 className="w-20 px-2 py-1 border rounded-md" />
                             <span>/ {task.maxPoints}</span>
@@ -240,8 +244,8 @@ function AdminTaskSubmissions() {
                 <td className="p-4">
                     {isEditing ? (
                         <textarea value={grade.feedback || ''}
-                            // --- THIS IS THE FIX ---
-                            // Use the correct handler for feedback
+                            
+                            
                             onChange={(e) => handleFeedbackChange(grade._id, e.target.value)}
                             className="w-full p-2 border rounded-md text-sm" rows="2" />
                     ) : (

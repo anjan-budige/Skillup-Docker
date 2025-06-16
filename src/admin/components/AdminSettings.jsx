@@ -5,9 +5,9 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { uploadLogoImage } from '../../utils/uploadLogoImage'; // Make sure this path is correct
+import { uploadLogoImage } from '../../utils/uploadLogoImage'; 
 
-// --- Reusable Animated Toggle Switch ---
+
 const ToggleSwitch = ({ enabled, onChange }) => {
     return (
         <div onClick={onChange} className={`flex items-center w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${enabled ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'}`}>
@@ -16,7 +16,7 @@ const ToggleSwitch = ({ enabled, onChange }) => {
     );
 };
 
-// --- Reusable Settings Card ---
+
 const SettingsCard = ({ title, description, children }) => (
     <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -114,12 +114,12 @@ function AdminSettings() {
                 updatedSettingsData.platformLogo = logoUrl;
             }
             
-            // Convert comma-separated string back to array before saving
+            
             if (typeof updatedSettingsData.allowedFileTypes === 'string') {
                 updatedSettingsData.allowedFileTypes = updatedSettingsData.allowedFileTypes
                     .split(',')
                     .map(ext => ext.trim())
-                    .filter(ext => ext); // remove any empty strings
+                    .filter(ext => ext); 
             }
 
             const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/settings`, updatedSettingsData, {
@@ -133,12 +133,12 @@ function AdminSettings() {
                     isLoading: false, 
                     autoClose: 3000,
                 });
-                // Update state with the saved data from the server, which is the source of truth
+                
                 setSettings(response.data.data);
                 setLogoPreview(response.data.data.platformLogo);
-                setLogoFile(null); // Clear the selected file
+                setLogoFile(null); 
             } else {
-                // This case handles backend-specific errors, e.g., validation failed
+                
                 throw new Error(response.data.message || "Failed to save settings");
             }
 

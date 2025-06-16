@@ -88,7 +88,6 @@ function StudentTaskSubmission() {
         if (files.length > 0) {
             setNewFilesToUpload(prev => [...prev, ...files]);
         }
-        // Reset the input value to allow selecting the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -183,6 +182,15 @@ function StudentTaskSubmission() {
                 </div>
             )}
 
+            {!isGraded && submission && (
+                <div className="mb-6 p-5 bg-yellow-50 rounded-xl border border-yellow-100">
+                    <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <Clock size={20} className="text-yellow-500" /> Waiting for Grading
+                    </h3>
+                    <p className="text-slate-600">Your submission has been received and is pending review by the faculty.</p>
+                </div>
+            )}
+
             {submission.content && (
                 <div>
                     <h4 className="font-bold mb-2">Text Submission</h4>
@@ -234,7 +242,7 @@ function StudentTaskSubmission() {
                             ))}
                         </div>
                     )}
-                     <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-md">
+                    <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-md">
                         <div className="space-y-1 text-center">
                             <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
                             <div className="flex flex-col items-center gap-2">
@@ -269,7 +277,7 @@ function StudentTaskSubmission() {
             </div>
             <div className="flex justify-end items-center mt-8 gap-4">
                 {isEditing && (
-                     <button type="button" onClick={handleCancelEdit} className="px-6 py-3 text-slate-600 font-semibold rounded-lg hover:bg-slate-100">
+                    <button type="button" onClick={handleCancelEdit} className="px-6 py-3 text-slate-600 font-semibold rounded-lg hover:bg-slate-100">
                         Cancel
                     </button>
                 )}
@@ -282,7 +290,7 @@ function StudentTaskSubmission() {
     );
     
     const renderStatusMessage = (message, details) => (
-         <div className="text-center py-10 bg-slate-50 rounded-lg">
+        <div className="text-center py-10 bg-slate-50 rounded-lg">
             <h2 className="text-2xl font-bold text-slate-800">{message}</h2>
             <p className="text-slate-500 mt-2">{details}</p>
         </div>
@@ -302,7 +310,7 @@ function StudentTaskSubmission() {
                             <h1 className="text-3xl font-bold text-slate-800 mt-1">{task.title}</h1>
                             <p className="text-slate-600 mt-2">{task.description || 'No description provided.'}</p>
                             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                <InfoCard icon={Calendar} label="Due Date" value={new Date(task.dueDate).toLocaleString()} />
+                                <InfoCard icon={Calendar} label="Due Date" value={new Date(task.dueDate).toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(' at ', ' ')} />
                                 <InfoCard icon={Star} label="Max Points" value={`${task.maxPoints} Points`} />
                                 <InfoCard icon={Clock} label="Status" value={isDeadlinePassed ? "Completed" : "Active"} />
                             </div>
@@ -321,8 +329,29 @@ function StudentTaskSubmission() {
                     {/* Main conditional rendering logic */}
                     {isEditing && renderForm()}
                     {!isEditing && submission && renderSubmissionView()}
-                    {!submission && !isDeadlinePassed && renderForm()}
-                    {isDeadlinePassed && !submission && renderStatusMessage("Deadline Passed", "The deadline for this task has passed and you did not make a submission.")}
+                    {!submission && !isDeadlinePassed && !isGraded && renderForm()}
+                    {isDeadlinePassed && !submission && !isGraded && renderStatusMessage("Deadline Passed", "The deadline for this task has passed and you did not make a submission.")}
+                    {!submission && isGraded && (
+                        <div className="text-center py-10 bg-slate-50 rounded-lg">
+                            <h2 className="text-2xl font-bold text-slate-800">Graded Without Submission</h2>
+                            <p className="text-slate-500 mt-2">You did not upload a submission, but the faculty has graded this task.</p>
+                            <div className="mt-4 p-5 bg-indigo-50 rounded-xl border border-indigo-100 max-w-2xl mx-auto">
+                                <h3 className="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2 justify-center">
+                                    <Award size={20} className="text-indigo-500" /> Grade & Feedback
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <p className="text-sm text-indigo-800 font-medium">Your Grade</p>
+                                        <p className="text-3xl font-bold text-indigo-900">{gradeInfo.grade ?? 'N/A'} / {task.maxPoints}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-indigo-800 font-medium">Faculty Feedback</p>
+                                        <p className="text-slate-700 italic mt-1">{gradeInfo.feedback || 'No feedback provided.'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </motion.div>
         </>

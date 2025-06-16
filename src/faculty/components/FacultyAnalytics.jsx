@@ -10,7 +10,7 @@ import moment from 'moment';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// --- Animation Variants ---
+
 const kpiCardVariant = {
     hidden: { opacity: 0, y: 20 },
     visible: (i) => ({ 
@@ -25,7 +25,7 @@ const chartVariant = {
     visible: { opacity: 1, scale: 1, transition: { duration: 0.5, delay: 0.2 } }
 };
 
-// --- Reusable Modal Component ---
+
 function Modal({ isOpen, onClose, title, children, size = 'max-w-md' }) {
     if (!isOpen) return null;
     return (
@@ -42,12 +42,12 @@ function Modal({ isOpen, onClose, title, children, size = 'max-w-md' }) {
     );
 }
 
-// --- Custom Calendar Component (FIXED) ---
+
 const CalendarComponent = ({ date, setDate, otherDate, isStartDate }) => {
     const [currentMonth, setCurrentMonth] = useState(moment(date));
     
-    // FIX: Use the full, unique day name
-    const daysOfWeek = moment.weekdaysShort(); // e.g., ['Sun', 'Mon', 'Tue', ...]
+    
+    const daysOfWeek = moment.weekdaysShort(); 
     
     const firstDayOfMonth = currentMonth.clone().startOf('month');
     const lastDayOfMonth = currentMonth.clone().endOf('month');
@@ -90,7 +90,7 @@ const CalendarComponent = ({ date, setDate, otherDate, isStartDate }) => {
     );
 };
 
-// --- Main Analytics Component ---
+
 function FacultyAnalytics() {
     const [analytics, setAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -108,7 +108,7 @@ function FacultyAnalytics() {
             const token = Cookies.get('token');
             const params = {
                 startDate: moment(filters.startDate).format('YYYY-MM-DD'),
-                endDate: moment(filters.endDate).format('YYYY-MM-DD'),
+                endDate: moment(filters.endDate).add(1, 'day').format('YYYY-MM-DD'),
             };
             const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/faculty/analytics`, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -226,7 +226,7 @@ function FacultyAnalytics() {
                 </ResponsiveContainer>
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 overflow-hidden">
                 <motion.div variants={chartVariant} className="bg-white p-6 rounded-xl shadow-lg border">
                     <h3 className="text-xl font-bold text-slate-800 mb-4">Top Performing Courses (by Avg. Grade)</h3>
                     <ResponsiveContainer width="100%" height={300}>
@@ -253,23 +253,53 @@ function FacultyAnalytics() {
                 </motion.div>
             </div>
 
-            <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)} title="Select Date Range" size="max-w-2xl">
-                <div className="flex flex-col sm:flex-row gap-6">
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-center mb-2">Start Date</h3>
-                        <CalendarComponent date={tempFilters.startDate} setDate={(date) => setTempFilters(prev => ({...prev, startDate: date}))} otherDate={tempFilters.endDate} isStartDate={true} />
-                    </div>
-                    <div className="flex-1 border-t sm:border-t-0 sm:border-l pt-6 sm:pt-0 sm:pl-6">
-                        <h3 className="font-semibold text-center mb-2">End Date</h3>
-                        <CalendarComponent date={tempFilters.endDate} setDate={(date) => setTempFilters(prev => ({...prev, endDate: date}))} otherDate={tempFilters.startDate} isStartDate={false} />
-                    </div>
-                </div>
-                <div className="flex justify-end mt-6 pt-4 border-t">
-                    <button onClick={handleApplyDateFilter} className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Apply Filters
-                    </button>
-                </div>
-            </Modal>
+            <Modal
+  isOpen={isDateModalOpen}
+  onClose={() => setIsDateModalOpen(false)}
+  title="Select Date Range"
+  size="max-w-full sm:max-w-2xl"
+>
+  {/* Scrollable content wrapper */}
+  <div className="max-h-[80vh] overflow-y-auto px-4 sm:px-6 py-4">
+    <div className="flex flex-col sm:flex-row gap-6">
+      {/* Start Date */}
+      <div className="w-full">
+        <h3 className="font-semibold text-center mb-2 text-base sm:text-lg">Start Date</h3>
+        <CalendarComponent
+          date={tempFilters.startDate}
+          setDate={(date) =>
+            setTempFilters((prev) => ({ ...prev, startDate: date }))
+          }
+          otherDate={tempFilters.endDate}
+          isStartDate={true}
+        />
+      </div>
+
+      {/* End Date */}
+      <div className="w-full border-t sm:border-t-0 sm:border-l pt-6 sm:pt-0 sm:pl-6">
+        <h3 className="font-semibold text-center mb-2 text-base sm:text-lg">End Date</h3>
+        <CalendarComponent
+          date={tempFilters.endDate}
+          setDate={(date) =>
+            setTempFilters((prev) => ({ ...prev, endDate: date }))
+          }
+          otherDate={tempFilters.startDate}
+          isStartDate={false}
+        />
+      </div>
+    </div>
+
+    {/* Apply Button */}
+    <div className="flex justify-end mt-6 pt-4 border-t">
+      <button
+        onClick={handleApplyDateFilter}
+        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
+      >
+        Apply Filters
+      </button>
+    </div>
+  </div>
+</Modal>
         </motion.div>
     );
 }

@@ -1,4 +1,4 @@
-// models/Task.js
+
 import { Schema, model } from 'mongoose';
 
 const attachmentSchema = new Schema({
@@ -27,17 +27,17 @@ const taskSchema = new Schema({
     ref: 'Faculty',
     required: true,
   },
-  // NEW: Date when the task becomes visible and active for students
+  
   publishDate: {
     type: Date,
     required: true,
     default: Date.now,
   },
-  // The final deadline
+  
   dueDate: {
     type: Date,
     required: true,
-    // Add a validator to ensure due date is after publish date
+    
     validate: [
         function(value) {
             return this.publishDate <= value;
@@ -46,15 +46,15 @@ const taskSchema = new Schema({
     ]
   },
   maxPoints: { type: Number, required: true, min: 0 },
-  attachments: [attachmentSchema], // Files provided by the faculty
-  // REMOVED: The old 'status' field is no longer needed.
-  // It will be calculated dynamically on the backend or frontend.
+  attachments: [attachmentSchema], 
+  
+  
 }, { timestamps: true });
 
 
-// --- Dynamic Status Logic (Example for your API) ---
-// You would add a virtual property to dynamically calculate the status
-// This is extremely powerful as it's always up-to-date.
+
+
+
 taskSchema.virtual('status').get(function() {
     const now = new Date();
     if (now < this.publishDate) {
@@ -62,11 +62,11 @@ taskSchema.virtual('status').get(function() {
     } else if (now >= this.publishDate && now <= this.dueDate) {
         return 'Active';
     } else {
-        return 'Completed'; // Or 'Past Due'
+        return 'Completed'; 
     }
 });
 
-// Ensure virtuals are included when converting to JSON
+
 taskSchema.set('toJSON', { virtuals: true });
 taskSchema.set('toObject', { virtuals: true });
 

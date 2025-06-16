@@ -1,14 +1,14 @@
 import { Schema, model } from 'mongoose';
 
 const settingsSchema = new Schema({
-    // A unique key to ensure we only ever have one settings document
+    
     key: {
         type: String,
         default: 'global',
         unique: true,
     },
 
-    // General Platform Settings
+    
     platformName: {
         type: String,
         required: true,
@@ -16,7 +16,7 @@ const settingsSchema = new Schema({
         trim: true,
     },
     platformLogo: {
-        type: String, // URL to the logo image
+        type: String, 
         default: null,
     },
     supportEmail: {
@@ -25,10 +25,10 @@ const settingsSchema = new Schema({
         lowercase: true,
     },
 
-    // Policy Settings
+    
     allowStudentRegistration: {
         type: Boolean,
-        default: false, // More secure by default
+        default: false, 
     },
     allowLateSubmissions: {
         type: Boolean,
@@ -36,14 +36,14 @@ const settingsSchema = new Schema({
     },
     maxUploadSizeMB: {
         type: Number,
-        default: 10, // Max size in Megabytes
+        default: 10, 
     },
     allowedFileTypes: {
-        type: [String], // e.g., ['.pdf', '.docx', '.zip']
+        type: [String], 
         default: ['.pdf', '.docx', '.pptx', '.zip', '.jpg', '.png'],
     },
 
-    // Maintenance Mode
+    
     maintenanceMode: {
         enabled: {
             type: Boolean,

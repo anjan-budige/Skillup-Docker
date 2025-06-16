@@ -7,7 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDebounce } from '../hooks/useDebounce';
 
-// --- Reusable Components (can be in their own files) ---
+
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-2xl' }) {
     if (!isOpen) return null;
@@ -46,7 +46,7 @@ const UserAvatar = ({ user }) => (
     )
 );
 
-// --- Main Component ---
+
 
 function AdminStudents() {
     const [studentList, setStudentList] = useState([]);

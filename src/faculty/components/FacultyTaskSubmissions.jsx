@@ -84,6 +84,10 @@ function FacultyTaskSubmissions() {
             toast.warn(`Grade cannot exceed ${task.maxPoints} points.`);
             return;
         }
+        if (numericValue < 0) {
+            toast.warn("Grade cannot be negative.");
+            return;
+        }
         setGrades(prev => prev.map(g => 
             g._id === gradeId ? { ...g, grade: numericValue, isDirty: true } : g
         ));
@@ -160,7 +164,8 @@ function FacultyTaskSubmissions() {
                                     <Calendar size={18} className="text-slate-400"/>
                                     <div>
                                         <p className="text-xs text-slate-500">Due Date</p>
-                                        <p className="font-semibold">{new Date(task.dueDate).toLocaleDateString()}</p>
+                                        <p className="font-semibold">{new Date(task.dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                                    
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -223,7 +228,7 @@ function FacultyTaskSubmissions() {
                                             <td className="p-4">
                                                 {isEditing ? (
                                                     <div className="flex items-center gap-1">
-                                                        <input type="number" value={grade.grade || ''}
+                                                        <input type="number" min="0" value={grade.grade || ''}
                                                             onChange={(e) => handleGradeChange(grade._id, e.target.value)}
                                                             className="w-20 px-2 py-1 border rounded-md" />
                                                         <span>/ {task.maxPoints}</span>
@@ -266,42 +271,87 @@ function FacultyTaskSubmissions() {
 
             <Modal isOpen={previewModal.isOpen} onClose={() => setPreviewModal({ isOpen: false, submission: null })} title="View Submission" size="max-w-3xl">
                 {previewModal.submission && (
-                    <div>
-                        <h4 className="font-bold mb-3">Attachments</h4>
-                        {previewModal.submission.attachments?.length > 0 ? (
-                            <ul className="space-y-3">
-                                {previewModal.submission.attachments.map(file => {
-                                    const isImage = file.fileType?.startsWith('image/');
-                                    return (
-                                        <li key={file.fileName} className="p-3 bg-slate-50 rounded-lg">
-                                            {isImage ? (
-                                                <div>
-                                                    <p className="font-semibold text-sm mb-2">{file.fileName}</p>
-                                                    <img src={file.url} alt={file.fileName} className="max-w-full h-auto rounded-md border" />
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between">
-                                                    <p className="font-semibold text-sm">{file.fileName}</p>
-                                                    <a href={file.url} target="_blank" rel="noopener noreferrer"
-                                                        className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-md text-sm hover:bg-emerald-200">
-                                                        <Download size={16} /> Download
-                                                    </a>
-                                                </div>
-                                            )}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        ) : <p className="text-sm text-slate-500">No attachments were submitted.</p>}
-                        
+                    <div className="space-y-6">
+                        {/* Submission Status and Timestamp */}
+                        <div className="flex items-center justify-between text-sm">
+                            <span className={`px-3 py-1 rounded-full ${previewModal.submission.status === 'On-Time' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                {previewModal.submission.status}
+                            </span>
+                            <span className="text-slate-500">
+                                {previewModal.submission.createdAt === previewModal.submission.updatedAt ? (
+                                    `Submitted on ${new Date(previewModal.submission.createdAt).toLocaleString('en-US', { 
+                                        day: 'numeric', 
+                                        month: 'long', 
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: 'numeric',
+                                        hour12: true 
+                                    })}`
+                                ) : (
+                                    <>
+                                        Submitted on {new Date(previewModal.submission.createdAt).toLocaleString()}
+                                        <br />
+                                        Updated on {new Date(previewModal.submission.updatedAt).toLocaleString()}
+                                    </>
+                                )}
+                            </span>
+                        </div>
+
+                        {/* Text Content Section */}
                         {previewModal.submission.content && (
-                            <div className="mt-4 pt-4 border-t">
-                                <h4 className="font-bold mb-2">Text Submission</h4>
-                                <div className="prose prose-sm max-w-none p-3 bg-slate-50 rounded-lg">
-                                    <p>{previewModal.submission.content}</p>
+                            <div>
+                                <h4 className="font-bold mb-3 text-slate-800">Text Submission</h4>
+                                <div className="prose prose-sm max-w-none p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                    <p className="whitespace-pre-wrap">{previewModal.submission.content}</p>
                                 </div>
                             </div>
                         )}
+
+                        {/* Attachments Section */}
+                        <div>
+                            <h4 className="font-bold mb-3 text-slate-800">Attachments</h4>
+                            {previewModal.submission.attachments?.length > 0 ? (
+                                <ul className="space-y-4">
+                                    {previewModal.submission.attachments.map(file => {
+                                        const isImage = file.fileType?.startsWith('image/');
+                                        const isPDF = file.fileType === 'application/pdf';
+                                        return (
+                                            <li key={file.fileName} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-sm text-slate-800">{file.fileName}</p>
+                                                        <p className="text-xs text-slate-500 mt-1">
+                                                            Uploaded on {new Date(file.uploadedAt).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                    <a href={file.url} target="_blank" rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors">
+                                                        <Download size={16} /> Download
+                                                    </a>
+                                                </div>
+                                                {isImage && (
+                                                    <div className="mt-3">
+                                                        <img src={file.url} alt={file.fileName} 
+                                                            className="max-w-full h-auto rounded-md border border-slate-200" />
+                                                    </div>
+                                                )}
+                                                {isPDF && (
+                                                    <div className="mt-3 h-[600px]">
+                                                        <iframe 
+                                                            src={file.url}
+                                                            className="w-full h-full rounded-md border border-slate-200"
+                                                            title={file.fileName}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-slate-500 italic">No attachments were submitted.</p>
+                            )}
+                        </div>
                     </div>
                 )}
             </Modal>

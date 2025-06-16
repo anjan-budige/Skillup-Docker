@@ -12,14 +12,14 @@ const COOKIE_CONFIG = {
   // 1 hour expiration for token
   token: {
     expires: 1/24, // 1 hour
-    secure: true,
+    secure: false,
     sameSite: 'strict',
     path: '/',
   },
   // 1 hour expiration for session
   session: {
     expires: 1/24, // 1 hour
-    secure: true,
+    secure: false,
     sameSite: 'strict',
     path: '/',
   }

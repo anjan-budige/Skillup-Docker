@@ -7,7 +7,7 @@ const batchSchema = new Schema({
     trim: true,
   },
   academicYear: {
-    type: String, // e.g., "2024-2025"
+    type: String, 
     required: [true, 'Academic year is required.'],
     trim: true,
   },
@@ -16,30 +16,30 @@ const batchSchema = new Schema({
     required: [true, 'Department is required.'],
     trim: true,
   },
-  // Array of students belonging to this batch
+  
   students: [{
     type: Schema.Types.ObjectId,
     ref: 'Student',
   }],
   
-  // --- POLYMORPHIC CREATOR FIELD ---
-  // This field will store the ID of the user who created the batch.
+  
+  
   createdBy: {
     type: Schema.Types.ObjectId,
     required: true,
-    // The 'refPath' tells Mongoose to look at the 'creatorModel' field 
-    // to determine which collection (Admin or Faculty) to query.
+    
+    
     refPath: 'creatorModel'
   },
-  // This field stores the name of the model that 'createdBy' refers to.
+  
   creatorModel: {
     type: String,
     required: true,
-    enum: ['Admin', 'Faculty'] // Restricts the value to these two models.
+    enum: ['Admin', 'Faculty'] 
   },
 }, { 
   timestamps: true,
-  // Ensure the combination of name, academicYear and department is unique to prevent duplicates
+  
   indexes: [{ unique: true, fields: ['name', 'academicYear', 'department'] }]
 });
 

@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 
 const gradeSchema = new Schema({
-    // Core Relationships
+    
     task: {
         type: Schema.Types.ObjectId,
         ref: 'Task',
@@ -14,20 +14,20 @@ const gradeSchema = new Schema({
         required: true,
         index: true,
     },
-    course: { // Denormalized for easier queries
+    course: { 
         type: Schema.Types.ObjectId,
         ref: 'Course',
         required: true,
     },
 
-    // Link to the actual submission, if one exists
+    
     submission: {
         type: Schema.Types.ObjectId,
         ref: 'Submission',
         default: null,
     },
     
-    // Grading Details
+    
     grade: {
         type: Number,
         min: 0,
@@ -38,7 +38,7 @@ const gradeSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Graded'], // Simple status for the grade itself
+        enum: ['Pending', 'Graded'], 
         default: 'Pending',
     },
     gradedBy: {
@@ -54,7 +54,7 @@ const gradeSchema = new Schema({
     },
 }, { timestamps: true });
 
-// Ensures a student has only one grade entry per task. CRITICAL.
+
 gradeSchema.index({ task: 1, student: 1 }, { unique: true });
 
 export default model('Grade', gradeSchema);

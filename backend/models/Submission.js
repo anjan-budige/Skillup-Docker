@@ -8,7 +8,7 @@ const submissionAttachmentSchema = new Schema({
 }, { _id: false });
 
 const submissionSchema = new Schema({
-  // Core Relationships
+  
   task: { 
     type: Schema.Types.ObjectId, 
     ref: 'Task', 
@@ -19,29 +19,29 @@ const submissionSchema = new Schema({
     ref: 'Student', 
     required: true 
   },
-  course: { // Denormalized for easier queries if needed
+  course: { 
     type: Schema.Types.ObjectId,
     ref: 'Course',
     required: true,
   },
 
-  // Submission Details
-  content: { // For text-based submissions
+  
+  content: { 
     type: String, 
     trim: true 
   },
-  attachments: [submissionAttachmentSchema], // For file uploads
+  attachments: [submissionAttachmentSchema], 
   
-  status: { // The status of this specific submission action
+  status: { 
     type: String,
     enum: ['On-Time', 'Late'],
     required: true
   },
 }, { 
-  timestamps: true, // `createdAt` will function as the `submittedAt` timestamp
+  timestamps: true, 
 });
 
-// A student can only submit to a task once. This index enforces that.
+
 submissionSchema.index({ task: 1, student: 1 }, { unique: true });
 
 export default model('Submission', submissionSchema);

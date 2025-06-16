@@ -13,7 +13,7 @@ import { Users } from 'lucide-react';
 
 
 
-// --- Reusable Components ---
+
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-4xl' }) {
     if (!isOpen) return null;
@@ -118,7 +118,7 @@ const InputField = ({ name, label, type, value, onChange, placeholder, required 
     </div>
 );
 
-// --- Main Component ---
+
 function AdminTasks() {
 
   
@@ -253,10 +253,10 @@ function AdminTasks() {
 
     const formatLocalDate = (dateStr) => {
       const date = new Date(dateStr);
-      // Convert to local timezone (e.g., Asia/Kolkata) offset
-      const offset = date.getTimezoneOffset(); // in minutes
+      
+      const offset = date.getTimezoneOffset(); 
       const localDate = new Date(date.getTime() - offset * 60000);
-      return localDate.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
+      return localDate.toISOString().slice(0, 16); 
     };
     
     

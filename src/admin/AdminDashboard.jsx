@@ -35,7 +35,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 
-// Mock data (remains the same)
+
 const chartData = [
   { name: 'Jan', students: 400, faculty: 240, tasks: 240 },
   { name: 'Feb', students: 300, faculty: 139, tasks: 221 },
@@ -57,7 +57,7 @@ const topFaculty = [
   { id: 3, name: 'Dr. Taylor', tasksAssigned: 25, completionRate: '78%' },
 ];
 
-// Import your content components
+
 import AdminHome from './components/AdminHome';
 import AdminUsers from './components/AdminUsers';
 import AdminDepartments from './components/AdminDepartments';
@@ -73,7 +73,7 @@ function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Controls if sidebar is expanded (desktop) or visible (mobile)
+  const [sidebarOpen, setSidebarOpen] = useState(false); 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -108,7 +108,7 @@ function AdminDashboard() {
           return;
         }
 
-        // Fetch user details
+        
         try {         const response = await axios.post(
             `${import.meta.env.VITE_API_URL}/api/auth/user-details`,
             {
@@ -150,14 +150,14 @@ function AdminDashboard() {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // If resizing to mobile and sidebar is expanded (desktop style), close it.
+      
       if (mobile && sidebarOpen) {
-        // setSidebarOpen(false); // Optionally close sidebar on resize to mobile
+        
       }
-      // On desktop, the sidebar state (expanded/collapsed) is preserved on resize
+      
     };
 
-    setIsMobile(window.innerWidth < 768); // Initial check
+    setIsMobile(window.innerWidth < 768); 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [sidebarOpen]);
@@ -166,14 +166,14 @@ function AdminDashboard() {
   const handleLogout = () => {
     Cookies.remove('token');
     Cookies.remove('session');
-    // toast.info("You have been logged out."); // Optional: Add toast notification for logout
+    
     navigate('/', { replace: true });
   };
 
   const handleNavigation = (path) => {
     navigate(path);
     if (isMobile) {
-      setSidebarOpen(false); // Close mobile drawer after navigation
+      setSidebarOpen(false); 
     }
   };
 

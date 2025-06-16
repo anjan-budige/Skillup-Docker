@@ -6,9 +6,9 @@ import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDebounce } from '../hooks/useDebounce';
-import { uploadCourseImage } from '../../utils/UploadCourseImage';
+import { uploadCourseImage } from '../../utils/uploadCourseImage';
 
-// --- Reusable Components (same as AdminCourses) ---
+
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-4xl' }) {
     if (!isOpen) return null;
@@ -102,7 +102,7 @@ const AssignableMultiSelect = ({ type, placeholder, selectedItems, onSelectionCh
     );
 };
 
-// --- Main Component ---
+
 function FacultyCourses() {
     const [courses, setCourses] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -113,7 +113,7 @@ function FacultyCourses() {
     const [modalState, setModalState] = useState({ type: null, data: null });
     const [courseDetails, setCourseDetails] = useState({ course: null, tasks: [] });
     
-    // Form State
+    
     const [formData, setFormData] = useState({});
     const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);

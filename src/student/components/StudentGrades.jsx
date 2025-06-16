@@ -39,7 +39,7 @@ function StudentGrades() {
 
   const calculateCourseAverage = (courseGrades) => {
     if (!courseGrades.length) return 0;
-    const sum = courseGrades.reduce((acc, grade) => acc + (grade.grade || 0), 0);
+    const sum = courseGrades.reduce((acc, grade) => acc + (parseFloat(grade.percentage) || 0), 0);
     return (sum / courseGrades.length).toFixed(2);
   };
 

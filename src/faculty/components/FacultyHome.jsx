@@ -123,7 +123,7 @@ function FacultyHome() {
                                         <p className="text-xs text-slate-500">{student.tasksCompleted || 0} tasks graded</p>
                                     </div>
                                 </div>
-                                <span className="font-bold text-slate-800 text-sm">{student.totalScore} pts</span>
+                                <span className="font-bold text-slate-800 text-sm">{Number(student.totalScore).toFixed(2)} pts</span>
                             </div>
                         )) : <p className="text-sm text-slate-500 text-center py-8">No graded students yet.</p>}
                     </div>

@@ -59,7 +59,7 @@ const facultySchema = new Schema({
   }
 });
 
-// Hash password before saving
+
 facultySchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
@@ -69,12 +69,12 @@ facultySchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare password for login
+
 facultySchema.methods.matchPassword = async function (enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password);
 };
 
-// Update the updatedAt timestamp before saving
+
 facultySchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();

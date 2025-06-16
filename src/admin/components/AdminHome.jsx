@@ -5,8 +5,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Mock data for the chart remains, as this is typically complex historical data
-// not included in a simple 'fetch stats' endpoint.
+
+
 const chartData = [
   { name: 'Jan', students: 40, faculty: 24, tasks: 32 },
   { name: 'Feb', students: 30, faculty: 13, tasks: 28 },
@@ -16,7 +16,7 @@ const chartData = [
   { name: 'Jun', students: 23, faculty: 38, tasks: 43 },
 ];
 
-// A simple skeleton component for the loading state
+
 const SkeletonCard = ({ className }) => (
   <div className={`p-5 bg-white/50 rounded-xl shadow-lg ${className}`}>
     <div className="flex items-center">
@@ -87,7 +87,7 @@ function AdminHome() {
     return <div className="text-center p-10 bg-red-100 text-red-700 rounded-lg">Error: {error}</div>;
   }
   
-  // Prepare stat cards data from the fetched stats
+  
   const kpiCards = [
     { title: 'Total Students', value: stats.kpis.totalStudents, icon: <Users size={28} className="text-blue-600" /> },
     { title: 'Total Faculty', value: stats.kpis.totalFaculty, icon: <User size={28} className="text-sky-600" /> },
@@ -130,9 +130,17 @@ function AdminHome() {
         <h3 className="text-xl font-semibold text-slate-800 mb-5">Platform Activity Overview (Monthly)</h3>
         <div className="h-80 sm:h-96">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+            <LineChart data={stats.monthlyStats} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
-              <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
+              <XAxis 
+                dataKey="month" 
+                stroke="#94a3b8" 
+                fontSize={12}
+                tickFormatter={(value) => {
+                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  return months[value - 1];
+                }}
+              />
               <YAxis stroke="#94a3b8" fontSize={12} />
               <Tooltip
                 contentStyle={{
@@ -140,6 +148,11 @@ function AdminHome() {
                   backdropFilter: 'blur(5px)',
                   border: '1px solid rgba(200, 200, 250, 0.5)',
                   borderRadius: '10px',
+                }}
+                formatter={(value, name) => [value, name]}
+                labelFormatter={(value) => {
+                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  return months[value - 1];
                 }}
               />
               <Line type="monotone" dataKey="students" stroke="#3B82F6" strokeWidth={2.5} name="New Students" />

@@ -5,7 +5,7 @@ import Admin from '../models/Admin.js';
 
 const router = express.Router();
 
-// GET /api/user/photo?id=...&role=...
+
 router.get('/photo', async (req, res) => {
   const { id, role } = req.query;
 

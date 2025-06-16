@@ -7,7 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDebounce } from '../hooks/useDebounce';
 
-// --- Reusable Components ---
+
 
 function Modal({ isOpen, onClose, title, children, size = 'max-w-2xl' }) {
     if (!isOpen) return null;
@@ -24,7 +24,7 @@ function Modal({ isOpen, onClose, title, children, size = 'max-w-2xl' }) {
     );
 }
 
-// --- Searchable Multi-Select for Students ---
+
 const StudentMultiSelect = ({ selectedStudents, onSelectionChange }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
@@ -137,7 +137,7 @@ const StudentMultiSelect = ({ selectedStudents, onSelectionChange }) => {
     );
 };
 
-// --- Main Component ---
+
 function AdminBatches() {
     const [batchList, setBatchList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

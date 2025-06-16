@@ -7,12 +7,12 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import process from 'process';
 
-// Load environment variables
+
 config();
 
 const router = Router();
 
-// Authentication middleware
+
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -33,7 +33,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Helper function to create hashed session
+
 const createHashedSession = (userData) => {
   const sessionData = {
     id: userData._id,
@@ -41,7 +41,7 @@ const createHashedSession = (userData) => {
     timestamp: Date.now()
   };
   
-  // Create a hash of the session data
+  
   const hash = crypto
     .createHmac('sha256', process.env.JWT_SECRET)
     .update(JSON.stringify(sessionData))
@@ -50,14 +50,14 @@ const createHashedSession = (userData) => {
   return { hash, sessionData };
 };
 
-// @route   POST /api/auth/student/register
-// @desc    Register a new student
-// @access  Public
+
+
+
 router.post('/student/register', async (req, res) => {
   try {
     const { firstName, lastName, email, username, password, rollNumber, department } = req.body;
 
-    // Check if student already exists (case-sensitive)
+    
     const existingStudent = await Student.findOne({ 
       $or: [{ email }, { username }, { rollNumber }] 
     });
@@ -65,7 +65,7 @@ router.post('/student/register', async (req, res) => {
       return res.status(400).json({ message: 'Email, username, or roll number already exists' });
     }
 
-    // Create new student
+    
     const student = new Student({
       firstName,
       lastName,
@@ -78,13 +78,13 @@ router.post('/student/register', async (req, res) => {
 
     await student.save();
 
-    // Create hashed session
+    
     const { hash } = createHashedSession({
       _id: student._id,
       role: 'Student'
     });
 
-    // Generate JWT token with minimal data
+    
     const token = jwt.sign(
       { 
         id: student._id,
@@ -114,14 +114,14 @@ router.post('/student/register', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/faculty/register
-// @desc    Register a new faculty
-// @access  Public
+
+
+
 router.post('/faculty/register', async (req, res) => {
   try {
     const { firstName, lastName, email, username, password, department } = req.body;
 
-    // Check if faculty already exists (case-sensitive)
+    
     const existingFaculty = await Faculty.findOne({ 
       $or: [{ email }, { username }] 
     });
@@ -129,7 +129,7 @@ router.post('/faculty/register', async (req, res) => {
       return res.status(400).json({ message: 'Email or username already exists' });
     }
 
-    // Create new faculty
+    
     const faculty = new Faculty({
       firstName,
       lastName,
@@ -141,13 +141,13 @@ router.post('/faculty/register', async (req, res) => {
 
     await faculty.save();
 
-    // Create hashed session
+    
     const { hash } = createHashedSession({
       _id: faculty._id,
       role: 'Faculty'
     });
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { 
         id: faculty._id,
@@ -177,14 +177,14 @@ router.post('/faculty/register', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/admin/register
-// @desc    Register a new admin
-// @access  Public
+
+
+
 router.post('/admin/register', async (req, res) => {
   try {
     const { firstName, lastName, email, username, password } = req.body;
 
-    // Check if admin already exists (case-sensitive)
+    
     const existingAdmin = await Admin.findOne({ 
       $or: [{ email }, { username }] 
     });
@@ -192,7 +192,7 @@ router.post('/admin/register', async (req, res) => {
       return res.status(400).json({ message: 'Email or username already exists' });
     }
 
-    // Create new admin
+    
     const admin = new Admin({
       firstName,
       lastName,
@@ -203,7 +203,7 @@ router.post('/admin/register', async (req, res) => {
 
     await admin.save();
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { id: admin._id, adminId: admin.adminId, role: 'Admin' },
       process.env.JWT_SECRET || 'fake-secret-key',
@@ -228,14 +228,14 @@ router.post('/admin/register', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/student/login
-// @desc    Authenticate student and return token
-// @access  Public
+
+
+
 router.post('/student/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Find student by username (case-insensitive)
+    
     const student = await Student.findOne({
       username: { $regex: new RegExp(`^${username}$`, 'i') }
     });
@@ -244,19 +244,19 @@ router.post('/student/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password (case-sensitive)
+    
     const isMatch = await student.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create hashed session
+    
     const { hash } = createHashedSession({
       _id: student._id,
       role: 'Student'
     });
 
-    // Generate JWT token with minimal data
+    
     const token = jwt.sign(
       { 
         id: student._id,
@@ -286,14 +286,14 @@ router.post('/student/login', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/faculty/login
-// @desc    Authenticate faculty and return token
-// @access  Public
+
+
+
 router.post('/faculty/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Find faculty by username (case-insensitive)
+    
     const faculty = await Faculty.findOne({ 
       username: { $regex: new RegExp(`^${username}$`, 'i') }
     });
@@ -301,19 +301,19 @@ router.post('/faculty/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password (case-sensitive)
+    
     const isMatch = await faculty.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Create hashed session
+    
     const { hash } = createHashedSession({
       _id: faculty._id,
       role: 'Faculty'
     });
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { 
         id: faculty._id,
@@ -343,14 +343,14 @@ router.post('/faculty/login', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/admin/login
-// @desc    Authenticate admin and return token
-// @access  Public
+
+
+
 router.post('/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Find admin by username (case-insensitive)
+    
     const admin = await Admin.findOne({ 
       username: { $regex: new RegExp(`^${username}$`, 'i') }
     });
@@ -358,13 +358,13 @@ router.post('/admin/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check password (case-sensitive)
+    
     const isMatch = await admin.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    
     const token = jwt.sign(
       { id: admin._id, adminId: admin.adminId, role: 'Admin' },
       process.env.JWT_SECRET || 'fake-secret-key',
@@ -389,9 +389,9 @@ router.post('/admin/login', async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/faculty/test-create
-// @desc    Create a test faculty user (for development only)
-// @access  Public
+
+
+
 router.post('/faculty/test-create', async (req, res) => {
   try {
     const testFaculty = {
@@ -403,7 +403,7 @@ router.post('/faculty/test-create', async (req, res) => {
       department: 'Computer Science'
     };
 
-    // Check if faculty already exists
+    
     const existingFaculty = await Faculty.findOne({ 
       $or: [{ email: testFaculty.email }, { username: testFaculty.username }] 
     });
@@ -420,7 +420,7 @@ router.post('/faculty/test-create', async (req, res) => {
       });
     }
 
-    // Create new faculty
+    
     const faculty = new Faculty(testFaculty);
     await faculty.save();
 
@@ -439,7 +439,7 @@ router.post('/faculty/test-create', async (req, res) => {
   }
 });
 
-// Get user details
+
 router.post('/user-details', authenticateToken, async (req, res) => {
   
   try {
@@ -493,9 +493,9 @@ router.post('/user-details', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   PUT /api/auth/update-profile
-// @desc    Update user profile
-// @access  Private
+
+
+
 router.put('/update-profile', authenticateToken, async (req, res) => {
   try {
     const { firstName, lastName, email, photo, department } = req.body;
@@ -520,7 +520,7 @@ router.put('/update-profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Update user fields
+    
     user.firstName = firstName;
     user.lastName = lastName;
     user.email = email;
@@ -548,9 +548,9 @@ router.put('/update-profile', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   PUT /api/auth/change-password
-// @desc    Change user password
-// @access  Private
+
+
+
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -575,13 +575,13 @@ router.put('/change-password', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Verify current password
+    
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Current password is incorrect' });
     }
 
-    // Update password
+    
     user.password = newPassword;
     await user.save();
 

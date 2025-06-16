@@ -4,17 +4,17 @@ import { User, Mail, Building, Shield, Users, UserPlus, CheckSquare, BarChart3, 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Cookies from 'js-cookie';
-// Ensure this path and function exist and work as expected
+
 import { uploadImage } from '../utils/imageUpload'; 
 
-// Default Avatar Placeholder (Simple SVG)
+
 const DefaultAvatar = ({ className }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
   </svg>
 );
 
-// Reusable Modal Component
+
 function Modal({ isOpen, onClose, title, children, size = "max-w-lg" }) {
   if (!isOpen) return null;
   return (
@@ -42,7 +42,7 @@ function Modal({ isOpen, onClose, title, children, size = "max-w-lg" }) {
   );
 }
 
-// Reusable InfoItem component
+
 const InfoItem = ({ icon: IconComponent, label, value, iconColor = "text-blue-500" }) => (
   <div className="flex items-start space-x-4 p-3 rounded-lg hover:bg-slate-100/60 transition-colors duration-150">
     <IconComponent className={`w-6 h-6 ${iconColor} mt-0.5 shrink-0`} />
@@ -53,7 +53,7 @@ const InfoItem = ({ icon: IconComponent, label, value, iconColor = "text-blue-50
   </div>
 );
 
-// Reusable PermissionItem component
+
 const PermissionItem = ({ icon: IconComponent, text }) => (
   <div className="flex items-center space-x-3 p-3 bg-blue-50/50 rounded-lg border border-blue-200/70 hover:shadow-md transition-shadow">
     <IconComponent className="w-5 h-5 text-blue-600 shrink-0" />
@@ -61,7 +61,7 @@ const PermissionItem = ({ icon: IconComponent, text }) => (
   </div>
 );
 
-// Custom InputField (keeping it for structure, but test simplified input first)
+
 const InputField = ({ label, name, type = "text", value, onChange, placeholder, required = false, disabled = false, children }) => (
   <div>
     <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-1">

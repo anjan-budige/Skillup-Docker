@@ -1,12 +1,12 @@
-// models/Notification.js
+
 import { Schema, model } from 'mongoose';
 
 const notificationSchema = new Schema({
-  // Polymorphic association to handle any recipient model
+  
   recipient: {
     type: Schema.Types.ObjectId,
     required: true,
-    refPath: 'recipientModel' // Tells Mongoose which model to look in
+    refPath: 'recipientModel' 
   },
   recipientModel: {
     type: String,
@@ -19,7 +19,7 @@ const notificationSchema = new Schema({
   },
   senderModel: {
     type: String,
-    enum: ['Admin', 'Faculty', 'Student', 'System'] // System for automated notifications
+    enum: ['Admin', 'Faculty', 'Student', 'System'] 
   },
   type: {
     type: String,
@@ -30,7 +30,7 @@ const notificationSchema = new Schema({
     ],
   },
   message: { type: String, required: true },
-  link: { type: String }, // A client-side path, e.g., /student/tasks/60f7e...
+  link: { type: String }, 
   isRead: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 

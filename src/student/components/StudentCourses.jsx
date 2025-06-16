@@ -6,7 +6,6 @@ import Cookies from 'js-cookie';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDebounce } from '../hooks/useDebounce';
-import { uploadCourseImage } from '../../utils/UploadCourseImage';
 
 // --- Reusable Components (same as AdminCourses) ---
 

@@ -1,0 +1,56 @@
+
+services:
+  # Backend Service (Node.js API)
+  backend:
+    build:
+      # The context now points to the 'backend' sub-directory relative to this file
+      context: ./backend 
+    container_name: skillup-backend
+    restart: unless-stopped
+    env_file: ./.env  # It will find the .env file in the current directory
+    depends_on:
+      - mongodb
+    networks:
+      - skillup-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # Frontend Service (React + Nginx Proxy)
+  frontend:
+    build:
+      # The context for the frontend build is the current directory ('.')
+      context: . 
+      dockerfile: Dockerfile # Explicitly state the Dockerfile name
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: skillup-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - skillup-network
+    volumes:
+      - ./backend/uploads:/usr/share/nginx/html/uploads
+
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:6.0
+    container_name: skillup-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - skillup-network
+
+networks:
+  skillup-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

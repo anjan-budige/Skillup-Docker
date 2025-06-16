@@ -54,7 +54,7 @@ const adminSchema = new Schema({
   }
 });
 
-// Hash password before saving
+
 adminSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
@@ -64,7 +64,7 @@ adminSchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare password for login
+
 adminSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password);
 };

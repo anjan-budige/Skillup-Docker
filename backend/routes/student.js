@@ -1,8 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import moment from 'moment'; // For date calculations
+import moment from 'moment'; 
 
-// Import all necessary models
+
 import Student from '../models/Student.js';
 import Course from '../models/Course.js';
 import Task from '../models/Task.js';
@@ -12,7 +12,7 @@ import Submission from '../models/Submission.js';
 
 const router = express.Router();
 
-// --- Reusable Middleware for Student Authentication & Authorization ---
+
 const authenticateStudent = async (req, res, next) => {
     try {
         const token = req.headers['authorization']?.split(' ')[1];
@@ -30,14 +30,15 @@ const authenticateStudent = async (req, res, next) => {
     }
 };
 
-// @desc    Fetch aggregated statistics for the logged-in student's dashboard
-// @route   GET /api/student/dashboard-stats
+
+
+
 router.get('/dashboard-stats', authenticateStudent, async (req, res) => {
     try {
         const studentId = req.user._id;
 
-        // --- 1. Find all courses and tasks relevant to this student ---
-        // First get student's batches
+        
+        
         const student = await Student.findById(studentId).populate('batch');
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found.' });
@@ -45,31 +46,64 @@ router.get('/dashboard-stats', authenticateStudent, async (req, res) => {
 
         const studentBatchIds = student.batch?.map(batch => batch._id) || [];
         
-        // Find courses associated with student's batches
+        
         const myCourses = await Course.find({ 
             batches: { $in: studentBatchIds }
         }).select('_id title courseCode');
         
         const myCourseIds = myCourses.map(c => c._id);
         
-        const myTasks = await Task.find({ course: { $in: myCourseIds } }).select('_id maxPoints');
+        
+        const myTasks = await Task.find({ course: { $in: myCourseIds } })
+            .select('_id maxPoints dueDate publishDate');
         const myTaskIds = myTasks.map(t => t._id);
 
-        // --- 2. Run All Aggregations in Parallel ---
+        
+        const submittedTaskIds = await Submission.find({
+            student: studentId,
+            task: { $in: myTaskIds }
+        }).distinct('task');
+
+        
+        const completedTaskIds = await Grade.find({
+            student: studentId,
+            task: { $in: myTaskIds },
+            grade: { $ne: null }
+        }).distinct('task');
+
+        
+        
+        
+        
+        
+        
+        
+        const now = new Date();
+        const pendingTasksCount = await Task.countDocuments({
+            _id: { $in: myTaskIds, $nin: submittedTaskIds }, 
+            dueDate: { $gte: now }, 
+            publishDate: { $lte: now } 
+        });
+
+        
         const [
             kpiData,
             taskCompletionTrend,
             upcomingDeadlines
         ] = await Promise.all([
-            // --- KPIs ---
+            
             Promise.all([
-                Grade.countDocuments({ student: studentId, status: 'Pending', submission: null }),
-                Grade.countDocuments({ student: studentId, submission: { $ne: null } }),
+                
+                Grade.countDocuments({ 
+                    student: studentId, 
+                    task: { $in: myTaskIds },
+                    grade: { $ne: null } 
+                }),
                 Grade.aggregate([
                     { 
                         $match: { 
-                            student: studentId, 
-                            submission: { $ne: null }, 
+                            student: studentId,
+                            task: { $in: myTaskIds },
                             grade: { $ne: null } 
                         }
                     },
@@ -89,17 +123,24 @@ router.get('/dashboard-stats', authenticateStudent, async (req, res) => {
                         }
                     }
                 ])
-            ]).then(([pendingCount, completedCount, marksResult]) => ({
+            ]).then(([completedCount, marksResult]) => ({
                 enrolledCourses: myCourses.length,
-                pendingAssignments: pendingCount,
+                pendingAssignments: pendingTasksCount, 
                 completedTasks: completedCount,
                 averageScore: marksResult[0]?.totalMarks ? 
                     ((marksResult[0]?.obtainedMarks || 0) / marksResult[0].totalMarks * 100).toFixed(2) : 0
             })),
 
-            // --- Task Completion Trend (last 4 weeks) ---
+            
             Grade.aggregate([
-                { $match: { student: studentId, submission: { $ne: null }, createdAt: { $gte: moment().subtract(4, 'weeks').toDate() } } },
+                { 
+                    $match: { 
+                        student: studentId,
+                        task: { $in: myTaskIds },
+                        grade: { $ne: null }, 
+                        createdAt: { $gte: moment().subtract(4, 'weeks').toDate() } 
+                    } 
+                },
                 {
                     $group: {
                         _id: { $week: "$createdAt" },
@@ -110,11 +151,13 @@ router.get('/dashboard-stats', authenticateStudent, async (req, res) => {
                 { $project: { _id: 0, week: { $concat: ["Week ", { $toString: "$_id" }] }, tasksCompleted: 1 } }
             ]),
 
-            // --- Upcoming Deadlines ---
+            
+            
             Task.find({ 
                 course: { $in: myCourseIds },
-                dueDate: { $gte: new Date() },
-                _id: { $nin: await Grade.find({ student: studentId, submission: { $ne: null } }).distinct('task') }
+                dueDate: { $gte: now },
+                _id: { $nin: submittedTaskIds }, 
+                publishDate: { $lte: now } 
             })
             .sort({ dueDate: 1 })
             .limit(5)
@@ -134,19 +177,19 @@ router.get('/dashboard-stats', authenticateStudent, async (req, res) => {
 });
 
 
-// @desc    Student: Fetch only courses they are enrolled in
-// @route   GET /api/student/courses/all
+
+
 router.get('/courses/all', authenticateStudent, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 6;
         const search = req.query.search || '';
 
-        // Get student's batches
+        
         const student = await Student.findById(req.user._id).populate('batch');
         const batchIds = student.batch.map(b => b._id);
 
-        // Find courses that have any of the student's batches
+        
         const query = { 
             batches: { $in: batchIds },
             ...(search && { $or: [{ title: { $regex: search, $options: 'i' } }, { courseCode: { $regex: search, $options: 'i' } }] })
@@ -160,7 +203,7 @@ router.get('/courses/all', authenticateStudent, async (req, res) => {
             .skip((page - 1) * limit)
             .limit(limit);
 
-        // Add faculty metadata to each course
+        
         const coursesWithMetadata = courses.map(course => {
             const facultyCount = course.faculty.length;
             const facultyNames = course.faculty.map(f => `${f.firstName} ${f.lastName}`).join(', ');
@@ -187,8 +230,8 @@ router.get('/courses/all', authenticateStudent, async (req, res) => {
     }
 });
 
-// @desc    Student: Get deep details for a single course (tasks and progress)
-// @route   GET /api/student/courses/details/:id
+
+
 router.get('/courses/details/:id', authenticateStudent, async (req, res) => {
     try {
         console.log('Fetching course details for ID:', req.params.id);
@@ -202,12 +245,12 @@ router.get('/courses/details/:id', authenticateStudent, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Course not found' });
         }
         
-        // Security check: ensure student is in one of the course's batches
+        
         const student = await Student.findById(req.user._id);
         console.log('Student batches:', student.batch);
         console.log('Course batches:', course.batches);
         
-        // Extract batch IDs correctly from populated batches
+        
         const studentBatchIds = student.batch.map(id => id.toString());
         const courseBatchIds = course.batches.map(batch => batch._id.toString());
         
@@ -225,7 +268,7 @@ router.get('/courses/details/:id', authenticateStudent, async (req, res) => {
             return res.status(403).json({ success: false, message: 'You are not enrolled in this course.' });
         }
 
-        // Add faculty metadata to course
+        
         const facultyCount = course.faculty.length;
         const facultyNames = course.faculty.map(f => `${f.firstName} ${f.lastName}`).join(', ');
         const courseWithMetadata = {
@@ -235,7 +278,7 @@ router.get('/courses/details/:id', authenticateStudent, async (req, res) => {
                            facultyCount
         };
         
-        // Get tasks and student's grades for this course
+        
         const tasks = await Task.find({ course: course._id })
             .select('title dueDate publishDate')
             .sort({ publishDate: -1 });
@@ -253,8 +296,8 @@ router.get('/courses/details/:id', authenticateStudent, async (req, res) => {
     }
 });
 
-// @desc    Student: Fetch all tasks with pagination and filtering
-// @route   GET /api/student/tasks/all
+
+
 router.get('/tasks/all', authenticateStudent, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -262,7 +305,7 @@ router.get('/tasks/all', authenticateStudent, async (req, res) => {
         const search = req.query.search || '';
         const courseId = req.query.courseId || '';
 
-        // First get all courses where student is enrolled
+        
         const student = await Student.findById(req.user._id).populate('batch');
         const studentBatchIds = student.batch.map(batch => batch._id);
         
@@ -288,13 +331,13 @@ router.get('/tasks/all', authenticateStudent, async (req, res) => {
             .skip((page - 1) * limit)
             .limit(limit);
 
-        // Get grades for these tasks
+        
         const grades = await Grade.find({
             task: { $in: tasks.map(t => t._id) },
             student: req.user._id
         }).select('task grade status submission');
 
-        // Map grades to tasks
+        
         const tasksWithGrades = tasks.map(task => {
             const grade = grades.find(g => g.task.toString() === task._id.toString());
             return {
@@ -314,8 +357,8 @@ router.get('/tasks/all', authenticateStudent, async (req, res) => {
     }
 });
 
-// @desc    Student: Get detailed statistics for a single task
-// @route   GET /api/student/tasks/details/:id
+
+
 router.get('/tasks/details/:id', authenticateStudent, async (req, res) => {
     try {
         const taskId = req.params.id;
@@ -334,7 +377,7 @@ router.get('/tasks/details/:id', authenticateStudent, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Task not found' });
         }
 
-        // Check if student is enrolled in any of the course's batches
+        
         const student = await Student.findById(req.user._id);
         const studentBatchIds = student.batch.map(id => id.toString());
         const courseBatchIds = task.course.batches.map(batch => batch._id.toString());
@@ -347,19 +390,31 @@ router.get('/tasks/details/:id', authenticateStudent, async (req, res) => {
             return res.status(403).json({ success: false, message: 'You are not enrolled in this course.' });
         }
 
-        // Get student's grade and submission for this task
+        
+        const kolkataTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+        const taskDueDate = new Date(task.dueDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+        const isDeadlinePassed = new Date(taskDueDate) < new Date(kolkataTime);
+
+        
+        const submissionDetails = await Submission.findOne({
+            task: taskId,
+            student: req.user._id
+        }).select('content attachments status createdAt');
+
+        
         const grade = await Grade.findOne({ 
             task: taskId,
             student: req.user._id
-        }).select('grade status submission feedback');
+        }).select('grade status feedback');
 
-        // If there's a submission, get its details
-        let submissionDetails = null;
-        if (grade?.submission) {
-            submissionDetails = await Submission.findOne({
+        
+        if (submissionDetails && !grade) {
+            await Grade.create({
                 task: taskId,
-                student: req.user._id
-            }).select('content attachments status createdAt');
+                student: req.user._id,
+                submission: submissionDetails._id,
+                status: 'Pending'
+            });
         }
 
         res.json({ 
@@ -367,8 +422,9 @@ router.get('/tasks/details/:id', authenticateStudent, async (req, res) => {
             data: { 
                 task,
                 grade: grade || null,
-                submissionStatus: grade?.submission ? 'Submitted' : 'Not Submitted',
-                submission: submissionDetails
+                submissionStatus: submissionDetails ? 'Submitted' : 'Not Submitted',
+                submission: submissionDetails,
+                isDeadlinePassed
             } 
         });
     } catch (error) {
@@ -383,7 +439,7 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
         const taskId = req.params.id;
         const { content, attachments } = req.body;
 
-        // Validate task exists and student is enrolled
+        
         const task = await Task.findOne({ _id: taskId })
             .populate({
                 path: 'course',
@@ -398,7 +454,7 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Task not found' });
         }
 
-        // Check if student is enrolled in any of the course's batches
+        
         const student = await Student.findById(req.user._id);
         const studentBatchIds = student.batch.map(id => id.toString());
         const courseBatchIds = task.course.batches.map(batch => batch._id.toString());
@@ -411,7 +467,7 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
             return res.status(403).json({ success: false, message: 'You are not enrolled in this course.' });
         }
 
-        // Check if deadline has passed using Kolkata timezone
+        
         const kolkataTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
         const taskDueDate = new Date(task.dueDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
         
@@ -419,34 +475,30 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Task deadline has passed.' });
         }
 
-        // Check if there's an existing submission and grade
-        const existingGrade = await Grade.findOne({ 
+        
+        const existingSubmission = await Submission.findOne({
             task: taskId,
             student: req.user._id
-        }).populate('submission');
+        });
 
-        if (existingGrade?.submission) {
-            // If task is already graded, don't allow resubmission
-            const kolkataTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-            const taskDueDate = new Date(task.dueDate).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+        if (existingSubmission) {
             
-            if (new Date(taskDueDate) < new Date(kolkataTime)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Task deadline has passed.' 
-                });
-            }
+            const grade = await Grade.findOne({
+                task: taskId,
+                student: req.user._id,
+                status: 'Graded'
+            });
 
-            if (existingGrade.status === 'Graded') {
+            if (grade) {
                 return res.status(400).json({ 
                     success: false, 
                     message: 'Cannot update submission as task has already been graded.' 
                 });
             }
 
-            // Update existing submission
+            
             const updatedSubmission = await Submission.findByIdAndUpdate(
-                existingGrade.submission._id,
+                existingSubmission._id,
                 {
                     content,
                     attachments,
@@ -456,14 +508,29 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
                 { new: true }
             );
 
+            
+            const updatedGrade = await Grade.findOneAndUpdate(
+                { 
+                    task: taskId,
+                    student: req.user._id
+                },
+                {
+                    $set: {
+                        submission: updatedSubmission._id,
+                        status: 'Pending'
+                    }
+                },
+                { new: true }
+            );
+
             res.json({ 
                 success: true, 
                 message: 'Task submission updated successfully',
-                data: updatedSubmission
+                data: { submission: updatedSubmission, grade: updatedGrade }
             });
         } else {
-            // Create new submission with all required fields
-            const newSubmission = new Submission({
+            
+            const newSubmission = await Submission.create({
                 content,
                 attachments,
                 submittedAt: new Date(),
@@ -472,17 +539,17 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
                 student: req.user._id,
                 task: taskId
             });
-            await newSubmission.save();
 
-            // Create grade with submission reference
-            const submission = await Grade.findOneAndUpdate(
+            
+            const grade = await Grade.findOneAndUpdate(
                 { 
                     task: taskId,
                     student: req.user._id
                 },
                 {
                     $set: {
-                        submission: newSubmission._id
+                        submission: newSubmission._id,
+                        status: 'Pending'
                     }
                 },
                 { 
@@ -494,7 +561,7 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
             res.json({ 
                 success: true, 
                 message: 'Task submitted successfully',
-                data: submission
+                data: { submission: newSubmission, grade }
             });
         }
 
@@ -504,16 +571,19 @@ router.post('/tasks/:id/submit', authenticateStudent, async (req, res) => {
     }
 });
 
-// @desc    Get all grades for the authenticated student
-// @route   GET /api/student/grades
+
+
 router.get('/grades', authenticateStudent, async (req, res) => {
     try {
-        const grades = await Grade.find({ student: req.user._id })
+        const grades = await Grade.find({ 
+            student: req.user._id,
+            grade: { $ne: null }  
+        })
             .populate('course', 'title courseCode')
             .populate('task', 'title maxPoints')
             .sort({ createdAt: -1 });
 
-        // Calculate percentage for each grade
+        
         const gradesWithPercentage = grades.map(grade => ({
             ...grade.toObject(),
             percentage: grade.grade ? (grade.grade / grade.task.maxPoints * 100).toFixed(2) : null

@@ -41,7 +41,7 @@ const studentSchema = new Schema({
   batch: [{
   type: Schema.Types.ObjectId,
   ref: 'Batch',
-  required: false, // true if at least one batch is required
+  required: false, 
   default: []
 }]
 ,
@@ -78,7 +78,7 @@ const studentSchema = new Schema({
   }
 });
 
-// Hash password before saving
+
 studentSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
@@ -88,12 +88,12 @@ studentSchema.pre('save', async function (next) {
   next();
 });
 
-// Method to compare password for login
+
 studentSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcryptjs.compare(enteredPassword, this.password);
 };
 
-// Update the updatedAt timestamp before saving
+
 studentSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
