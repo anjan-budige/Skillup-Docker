@@ -15,7 +15,7 @@ connectDB();
 const app = express();
 
 
-const allowedOrigin = ['http://localhost:5173', 'http://192.168.150.175:5173'];
+const allowedOrigin = ['http://localhost:5173', 'http://192.168.150.175:5173', 'https://skillupnew.netlify.app/', 'https://skillupnew.innovlabs.tech/'];
 
 app.use(cors({
   origin: allowedOrigin,
