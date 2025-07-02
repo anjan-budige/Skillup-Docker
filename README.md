@@ -67,15 +67,30 @@ A clean, focused interface for students to engage with their coursework.
 ![Admin Dashboard](https://raw.githubusercontent.com/anjan-budige/education-task-management/refs/heads/main/admindashboard.png)
 *The main analytics dashboard provides a high-level overview of platform activity.*
 
+`Demo Admin Login Credentials`
+
+`Username : Admin`
+`Password : Anjan1@`
+
 ---
 #### Faculty Dashboard
 ![Faculty Dashboard](https://raw.githubusercontent.com/anjan-budige/education-task-management/refs/heads/main/facultydashboard.png)
 *Faculty Level Analytics includes assigned courses, students and able to manage/create courses, tasks, student batches, grading, etc*
 
+`Demo Faculty Login Credentials`
+
+`Username : faculty`
+`Password : Anjan1@`
+
 ---
 #### Student Dashboard
 ![Student Dashboard](https://raw.githubusercontent.com/anjan-budige/education-task-management/refs/heads/main/studentdashboard.png)
 *Student portal for completing tasks and getting analytics of the completed tasks*
+
+`Demo Student Login Credentials`
+
+`Username : B22CS101`
+`Password : Anjan1@`
 
 ---
 
